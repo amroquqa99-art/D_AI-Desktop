@@ -27,7 +27,7 @@ export function createDaiDesktopManager({ launch = launchDaiDesktopBridge } = {}
     app.once("before-quit", quitListener);
     pending = (async () => {
       try {
-        const handle = await launch({ python, cwd, catalogPath });
+        const handle = await launch({ python, cwd, catalogPath, startupTimeoutMs: 45000 });
         child = handle;
         if (quitting) { await drop("disabled"); return snapshot(); }
         const health = await handle.client.health();

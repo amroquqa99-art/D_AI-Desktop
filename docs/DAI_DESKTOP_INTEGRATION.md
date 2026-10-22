@@ -46,3 +46,8 @@ Real handshake: DAI_TEST_CORE_DIR=/path/to/D_AI node --test packages/desktop/src
 - A floating D_AI panel in the original OpenCode Desktop renderer shows the connectivity state, configured systems and their maturity/validation metadata.
 - The renderer receives **no** Python token, port, process handle or arbitrary command execution ability.
 - The UI is a verification panel, not a claim that D_AI missions or agent teams work yet.
+
+
+### Packaging metadata
+
+The derived Desktop **distribution package** now declares GPL-3.0-or-later. Upstream OpenCode MIT source notices remain preserved in LICENSES/OpenCode-MIT.txt. The original upstream brand and auto-update configuration still need a separate safe rebranding milestone before public binary release; this PR is not a public release.

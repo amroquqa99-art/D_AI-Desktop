@@ -70,3 +70,14 @@ test("lost child invalidates the catalog", async () => {
   assert.equal((await manager.status()).state, "unavailable");
   assert.deepEqual(manager.systems(), []);
 });
+
+test("desktop startup gives cold macOS Python a bounded 45s budget", async () => {
+  let config;
+  const m = createDaiDesktopManager({ launch: async opts => {
+    config = opts;
+    return { client: valid, stop: async () => undefined };
+  } });
+  await m.start(new EventEmitter(), { python: "python" });
+  assert.equal(config.startupTimeoutMs, 45000);
+  await m.stop();
+});

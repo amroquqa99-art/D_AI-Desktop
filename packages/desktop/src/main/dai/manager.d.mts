@@ -17,7 +17,7 @@ export interface DaiDesktopManager {
   stop(): Promise<void>;
 }
 export function createDaiDesktopManager(options?: { launch?: (options: {
-  python: string; cwd: string; catalogPath?: string;
+  python: string; cwd: string; catalogPath?: string; startupTimeoutMs?: number;
 }) => Promise<{ client: {
   health(): Promise<{service: string; status: string; mode: string; version: string}>;
   systems(): Promise<{systems: DaiSystem[]}>;
