@@ -4,6 +4,10 @@ on:
     paths:
       - 'packages/desktop/src/main/dai/**'
       - 'packages/desktop/src/main/desktop.ts'
+      - 'packages/desktop/src/main/ipc.ts'
+      - 'packages/desktop/src/main/ipc-handlers/dai.ts'
+      - 'packages/desktop/src/shared/ipc-rpc**'
+      - 'packages/desktop/src/renderer/**'
       - '.github/workflows/dai-desktop-bridge.yml'
   workflow_dispatch:
 permissions:
@@ -29,7 +33,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: JavaScript contract tests
-        run: node --test packages/desktop/src/main/dai/bridge.test.mjs
+        run: node --test packages/desktop/src/main/dai/bridge.test.mjs packages/desktop/src/main/dai/manager.test.mjs
       - name: Check Python bridge import and loopback bind
         env:
           PYTHONPATH: ${{ github.workspace }}/dai-core/src

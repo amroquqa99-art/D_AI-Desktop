@@ -13,6 +13,8 @@ import type {
 } from "../shared/ipc-contract"
 
 export type ElectronAPI = {
+  daiDesktopStatus(): Promise<{ state: "disabled" | "starting" | "connected" | "unavailable"; mode: "none" | "read_only"; version: string | null }>
+  daiDesktopSystems(): Promise<Array<{ id: string; primary: string | null; roles: string[]; maturity: string; professional_validation: string }>>
   awaitInitialization(): Promise<ServerReadyData>
   reconnectService(): Promise<ServerReadyData>
   consumeInitialDeepLinks(): Promise<string[]>

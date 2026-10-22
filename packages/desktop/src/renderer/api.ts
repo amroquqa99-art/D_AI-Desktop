@@ -22,6 +22,8 @@ const seeded = window.electron.storageSnapshot.then((snapshot) => new Map(Object
 
 export const api: ElectronAPI = {
   awaitInitialization: () => invoke("AppAwaitInitialization"),
+  daiDesktopStatus: () => invoke("DaiDesktopStatus"),
+  daiDesktopSystems: () => invoke("DaiDesktopSystems").then(mutable),
   reconnectService: () => invoke("AppReconnectService"),
   consumeInitialDeepLinks: () => invoke("AppConsumeInitialDeepLinks").then(mutable),
   isFirstLaunchOnboardingPending: () => invoke("AppIsFirstLaunchOnboardingPending"),

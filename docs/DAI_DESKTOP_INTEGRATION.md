@@ -38,3 +38,11 @@ No OpenGrokBot code is imported yet; it needs supply-chain review first.
 
 Tests: node --test packages/desktop/src/main/dai/bridge.test.mjs
 Real handshake: DAI_TEST_CORE_DIR=/path/to/D_AI node --test packages/desktop/src/main/dai/bridge.smoke.test.mjs
+
+
+## M2: Typed IPC and visible status panel
+
+- D_AI status and sanitized system catalog are now exposed through two **read-only typed Effect RPC** operations: `DaiDesktopStatus` and `DaiDesktopSystems`.
+- A floating D_AI panel in the original OpenCode Desktop renderer shows the connectivity state, configured systems and their maturity/validation metadata.
+- The renderer receives **no** Python token, port, process handle or arbitrary command execution ability.
+- The UI is a verification panel, not a claim that D_AI missions or agent teams work yet.
