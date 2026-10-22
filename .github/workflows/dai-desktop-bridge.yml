@@ -8,6 +8,11 @@ on:
       - 'packages/desktop/src/main/ipc-handlers/dai.ts'
       - 'packages/desktop/src/shared/ipc-rpc**'
       - 'packages/desktop/src/renderer/**'
+      - 'packages/desktop/electron-builder.config*'
+      - 'packages/desktop/scripts/**'
+      - 'packages/desktop/src/main/constants.ts'
+      - 'packages/desktop/src/main/lifecycle/**'
+      - 'packages/desktop/package.json'
       - '.github/workflows/dai-desktop-bridge.yml'
   workflow_dispatch:
 permissions:
@@ -54,3 +59,5 @@ jobs:
         uses: ./.github/actions/setup-bun
       - name: Typecheck Desktop package
         run: bun run --cwd packages/desktop typecheck
+      - name: Packaging identity and protocol regression
+        run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts scripts/identity.test.ts
