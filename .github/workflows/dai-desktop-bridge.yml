@@ -44,3 +44,13 @@ jobs:
           DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-core
           DAI_TEST_PYTHON: python
         run: node --test packages/desktop/src/main/dai/bridge.smoke.test.mjs
+
+  desktop-typecheck:
+    name: Desktop TypeScript compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bun and workspace dependencies
+        uses: ./.github/actions/setup-bun
+      - name: Typecheck Desktop package
+        run: bun run --cwd packages/desktop typecheck
