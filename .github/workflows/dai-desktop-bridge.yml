@@ -1,0 +1,37 @@
+name: D_AI Desktop bridge smoke
+on:
+  pull_request:
+    paths:
+      - 'packages/desktop/src/main/dai/**'
+      - 'packages/desktop/src/main/desktop.ts'
+      - '.github/workflows/dai-desktop-bridge.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: amroquqa99-art/D_AI
+          ref: 270eca2eb92b7369ff57f58e17cc717c00e62307
+          path: dai-core
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: JavaScript contract tests
+        run: node --test packages/desktop/src/main/dai/bridge.test.mjs
+      - name: Real D_AI core handshake
+        env:
+          DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-core
+          DAI_TEST_PYTHON: python
+        run: node --test packages/desktop/src/main/dai/bridge.smoke.test.mjs
