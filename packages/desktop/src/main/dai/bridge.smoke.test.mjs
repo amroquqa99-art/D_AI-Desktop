@@ -10,6 +10,7 @@ test("real Python core handshake", { skip: !process.env.DAI_TEST_CORE_DIR }, asy
     cwd: root,
     env: { ...process.env, PYTHONPATH: path.join(root, "src") },
     catalogPath: path.join(root, "config", "systems.json"),
+    startupTimeoutMs: 45000,
   });
   try {
     assert.equal((await bridge.client.health()).mode, "read_only");

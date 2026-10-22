@@ -30,6 +30,11 @@ jobs:
           python-version: '3.12'
       - name: JavaScript contract tests
         run: node --test packages/desktop/src/main/dai/bridge.test.mjs
+      - name: Check Python bridge import and loopback bind
+        env:
+          PYTHONPATH: ${{ github.workspace }}/dai-core/src
+          DAI_BRIDGE_CATALOG: ${{ github.workspace }}/dai-core/config/systems.json
+        run: python -c "import os; from pathlib import Path; from dai.desktop_bridge import read_catalog,make_server; s=make_server('x'*48,read_catalog(Path(os.environ['DAI_BRIDGE_CATALOG'])),0); print('D_AI core can bind loopback:',s.server_port); s.server_close()"
       - name: Real D_AI core handshake
         env:
           DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-core
