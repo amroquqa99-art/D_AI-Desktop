@@ -51,3 +51,12 @@ Real handshake: DAI_TEST_CORE_DIR=/path/to/D_AI node --test packages/desktop/src
 ### Packaging metadata
 
 The derived Desktop **distribution package** now declares GPL-3.0-or-later. Upstream OpenCode MIT source notices remain preserved in LICENSES/OpenCode-MIT.txt. The original upstream brand and auto-update configuration still need a separate safe rebranding milestone before public binary release; this PR is not a public release.
+
+
+## Fork identity isolation (M4 partial)
+
+Electron app IDs and private Electron userData folder are now `online.amroquqa.dai.desktop[.dev|.beta]`, distinct from OpenCode. Linux app metadata/package names and Windows/macOS app identifiers are distinct; only `dai-desktop://` is registered as an external protocol. `opencode://` remains owned by OpenCode and is not registered by this fork.
+
+D_AI Desktop auto-update publishing is disabled; no OpenCode upstream update endpoint is configured, and the inherited desktop publishing script fails closed until an independent signing/update service is audited. Upstream OpenCode CLI, source licensing notices and asset formats remain unmodified for now.
+
+**Not release-ready:** the bundled OpenCode CLI may still use shared configuration and databases outside the isolated Electron userData directory; URL sign-in callbacks requiring `opencode://` need independent compatibility testing. Current icons and other upstream graphic assets need replacement/rights review, and the Python D_AI Core is not bundled. Never claim full separation or ship installers until these gates pass.

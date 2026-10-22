@@ -4,29 +4,29 @@ const arg = process.argv[2]
 
 const channel = arg === "dev" || arg === "beta" || arg === "prod" ? arg : resolveChannel()
 
-const appId = channel === "prod" ? "ai.opencode.desktop" : `ai.opencode.desktop.${channel}`
+const appId = channel === "prod" ? "online.amroquqa.dai.desktop" : `online.amroquqa.dai.desktop.${channel}`
 
-const productName = channel === "prod" ? "OpenCode" : `OpenCode ${channel.charAt(0).toUpperCase() + channel.slice(1)}`
+const productName = channel === "prod" ? "D_AI Desktop" : `D_AI Desktop ${channel.charAt(0).toUpperCase() + channel.slice(1)}`
 
-const summary = `Open source AI coding agent${channel !== "prod" ? ` (${channel})` : ""}`
+const summary = `Open-source, local-first multi-agent coding workspace${channel !== "prod" ? ` (${channel})` : ""}`
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>${appId}</id>
 
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>MIT</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
 
   <name>${productName}</name>
   <summary>${summary}</summary>
 
-  <developer id="ly.anoma">
-    <name>Anomaly Innovations Inc.</name>
+  <developer id="online.amroquqa">
+    <name>D_AI Desktop contributors</name>
   </developer>
 
   <description>
     <p>
-      OpenCode is an open source agent that helps you write and run code with any AI model.
+      D_AI Desktop is a GPL-licensed desktop fork of OpenCode that integrates the D_AI control plane. Original OpenCode MIT components remain credited.
     </p>
   </description>
 
@@ -34,15 +34,10 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 
   <content_rating type="oars-1.1" />
 
-  <url type="bugtracker">https://github.com/anomalyco/opencode/issues</url>
-  <url type="homepage">https://opencode.ai</url>
-  <url type="vcs-browser">https://github.com/anomalyco/opencode</url>
+  <url type="bugtracker">https://github.com/amroquqa99-art/D_AI-Desktop/pulls</url>
+  <url type="homepage">https://github.com/amroquqa99-art/D_AI-Desktop</url>
+  <url type="vcs-browser">https://github.com/amroquqa99-art/D_AI-Desktop</url>
 
-  <screenshots>
-    <screenshot type="default">
-      <image>https://raw.githubusercontent.com/anomalyco/opencode/b75d4d1c5ec449585d515c756fc81f080a157a9a/packages/web/src/assets/lander/screenshot.png</image>
-    </screenshot>
-  </screenshots>
 </component>
 `
 
