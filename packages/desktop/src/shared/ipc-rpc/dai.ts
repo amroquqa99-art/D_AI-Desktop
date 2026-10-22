@@ -4,8 +4,8 @@ import { Rpc, RpcGroup } from "effect/rpc"
 
 // Strictly informational: no arbitrary commands, credentials, URLs or paths.
 export const DaiBridgeStatus = Schema.Struct({
-  state: Schema.Literal("disabled", "starting", "connected", "unavailable"),
-  mode: Schema.Literal("none", "read_only"),
+  state: Schema.Literals(["disabled", "starting", "connected", "unavailable"]),
+  mode: Schema.Literals(["none", "read_only"]),
   version: Schema.NullOr(Schema.String),
 })
 export const DaiSystem = Schema.Struct({
