@@ -1,0 +1,13 @@
+services:
+  bridge-contract:
+    build:
+      context: ..
+      dockerfile: desktop/Dockerfile.bridge-tests
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp

@@ -1,0 +1,6 @@
+# GPL-3.0-or-later, deterministic developer contract runner only.
+FROM node:22-alpine
+WORKDIR /workspace
+COPY packages/desktop/src/main/dai/ ./packages/desktop/src/main/dai/
+USER node
+CMD ["node", "--test", "packages/desktop/src/main/dai/bridge.test.mjs", "packages/desktop/src/main/dai/manager.test.mjs"]

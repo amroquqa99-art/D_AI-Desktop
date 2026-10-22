@@ -63,3 +63,11 @@ jobs:
         run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts scripts/identity.test.ts
       - name: Bundle Electron main, preload and renderer
         run: cd packages/desktop && bunx electron-vite build
+
+  docker-bridge:
+    name: Docker Compose offline contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute tests in isolated container
+        run: docker compose -f desktop/compose.yaml up --build --abort-on-container-exit --exit-code-from bridge-contract

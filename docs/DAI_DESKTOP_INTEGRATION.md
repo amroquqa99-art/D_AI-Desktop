@@ -80,3 +80,16 @@ flows; test the upstream CLI's temporary directories, extension caches and
 plugins; audit symlink and path traversals before claiming a full security
 sandbox. Isolated configuration is **not** a replacement for OS-level agent
 sandboxing or an entitlement/ACL policy.
+
+## Docker / Compose developer checks
+
+The repository includes an offline, read-only Node contract runner for the Desktop bridge:
+
+```sh
+docker compose -f desktop/compose.yaml up --build --abort-on-container-exit --exit-code-from bridge-contract
+```
+
+This container deliberately has no network access, runs as an unprivileged user
+and has no file-system write access except /tmp. It validates the JavaScript
+bridge lifecycle contract; it is **not** a replacement for testing real
+Electron windows or the Python D_AI Core on all native operating systems.
