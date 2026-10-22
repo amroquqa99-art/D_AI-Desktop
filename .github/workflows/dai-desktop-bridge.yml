@@ -61,3 +61,5 @@ jobs:
         run: bun run --cwd packages/desktop typecheck
       - name: Packaging, identity and profile-isolation regression
         run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts scripts/identity.test.ts
+      - name: Bundle Electron main, preload and renderer
+        run: cd packages/desktop && bunx electron-vite build
