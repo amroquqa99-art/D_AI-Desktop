@@ -60,3 +60,23 @@ Electron app IDs and private Electron userData folder are now `online.amroquqa.d
 D_AI Desktop auto-update publishing is disabled; no OpenCode upstream update endpoint is configured, and the inherited desktop publishing script fails closed until an independent signing/update service is audited. Upstream OpenCode CLI, source licensing notices and asset formats remain unmodified for now.
 
 **Not release-ready:** the bundled OpenCode CLI may still use shared configuration and databases outside the isolated Electron userData directory; URL sign-in callbacks requiring `opencode://` need independent compatibility testing. Current icons and other upstream graphic assets need replacement/rights review, and the Python D_AI Core is not bundled. Never claim full separation or ship installers until these gates pass.
+
+
+## Isolating the inherited OpenCode CLI (M4 follow-up)
+
+The bundled OpenCode CLI now receives dedicated XDG config, data, cache and
+state roots below D_AI Desktop's Electron \`userData/cli-profile\`. The
+\`OPENCODE_CONFIG_DIR\` and \`OPENCODE_DB\` overrides are always rooted there.
+The desktop's own sidecar-discovery registration is therefore independent of
+an existing OpenCode installation. D_AI Desktop does not read or migrate
+credentials from OpenCode; login is intentionally separate.
+
+The profile is selected before the sidecar probe and reasserted after shell
+environment imports. Upstream onboarding test modes preserve their own
+ephemeral filesystem roots.
+
+**Remaining:** Verify native production installers and external authentication
+flows; test the upstream CLI's temporary directories, extension caches and
+plugins; audit symlink and path traversals before claiming a full security
+sandbox. Isolated configuration is **not** a replacement for OS-level agent
+sandboxing or an entitlement/ACL policy.

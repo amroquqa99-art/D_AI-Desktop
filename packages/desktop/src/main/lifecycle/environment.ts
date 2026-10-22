@@ -6,6 +6,7 @@ import { DesktopPaths } from "../paths"
 import { getUserShell, loadShellEnv } from "../service/shell-env"
 import { registerRendererProtocol, setDockIcon, setProtocolReporter } from "../windows"
 import { scoped } from "../native/logging"
+import { forkCliEnvironment, useForkProfile } from "./profile"
 
 // electron-context-menu attaches to every existing and future window, so it can load once the first
 // window is up instead of holding up startup with its dependency tree.
@@ -23,9 +24,12 @@ export const preferApplicationEnvironment = Effect.gen(function* () {
   const shell = process.platform === "win32" ? null : getUserShell()
   const shellEnv = shell ? yield* loadShellEnv(shell) : null
   yield* Effect.sync(() => {
-    if (!shellEnv?.XDG_STATE_HOME) delete process.env.XDG_STATE_HOME
+    if (!shellEnv?.XDG_STATE_HOME && !useForkProfile()) delete process.env.XDG_STATE_HOME
     Object.assign(process.env, {
       ...shellEnv,
+      // The user shell can contain OpenCode-specific environment overrides.
+      // Restore the isolated D_AI roots *after* importing the shell environment.
+      ...(useForkProfile() ? forkCliEnvironment(app.getPath("userData")) : {}),
       OPENCODE_EXPERIMENTAL_ICON_DISCOVERY: "true",
       OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
       OPENCODE_CLIENT: "desktop",
