@@ -85,7 +85,7 @@ test("project paths are validated before network access and no secret is placed 
   assert.ok(seen.url.endsWith("/v1/projects/client:project/missions"));
   assert.equal(seen.opts.method, "GET");
   for (const id of ("../private", "", "bad/project", "%2F", "a".repeat(129))) {
-    await assert.rejects(client.missions(id), /identifier/);
+    assert.throws(() => client.missions(id), /identifier/);
   }
   assert.equal(called, 1);
 });
