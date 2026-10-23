@@ -12,6 +12,8 @@ on:
       - 'packages/desktop/scripts/**'
       - 'packages/desktop/src/main/constants.ts'
       - 'packages/desktop/src/main/lifecycle/**'
+      - 'packages/desktop/src/main/service/background-service.ts'
+      - 'packages/desktop/src/main/index.ts'
       - 'packages/desktop/package.json'
       - 'packages/app/src/providers/connect/**'
       - 'packages/app/src/runtime/i18n/**'
@@ -42,7 +44,7 @@ jobs:
       - name: Install integrated D_AI Core
         run: python -m pip install -e ./dai-core
       - name: JavaScript contract tests
-        run: node --test packages/desktop/src/main/dai/bridge.test.mjs packages/desktop/src/main/dai/manager.test.mjs
+        run: node --test packages/desktop/src/main/dai/bridge.test.mjs packages/desktop/src/main/dai/manager.test.mjs packages/desktop/src/main/dai/router-profile.test.mjs
       - name: Check Python bridge import and loopback bind
         env:
           PYTHONPATH: ${{ github.workspace }}/dai-core/src
