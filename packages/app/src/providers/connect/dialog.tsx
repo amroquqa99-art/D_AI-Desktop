@@ -44,7 +44,6 @@ import { Persistence } from "@/runtime/persistence/schema"
 import { Schema } from "effect"
 import {
   CONSOLE_PROVIDERS,
-  consoleIntegration,
   createProviderConnectionController,
   providerFormDefaults,
   type ProviderConnectMethod,
