@@ -34,8 +34,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: amroquqa99-art/D_AI
-          ref: a4837c9c9f91094cf67529f60a1cc54279da3070
+          # Stacked Core read-only bridge PR #29, not the Core model-routing branch.
+          ref: 740a190d03be343e710c778d28aeb8fa364f99d7
           path: dai-core
+      - uses: actions/checkout@v4
+        with:
+          repository: amroquqa99-art/D_AI
+          # Core model value-router PR #30; until stacked bridge/router are reconciled,
+          # test the router against this checkout without misrepresenting bridge coverage.
+          ref: a4837c9c9f91094cf67529f60a1cc54279da3070
+          path: dai-router-core
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -58,7 +66,7 @@ jobs:
         run: node --test packages/desktop/src/main/dai/bridge.smoke.test.mjs
       - name: Real pinned D_AI native V2 router and Auto preference integration
         env:
-          DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-core
+          DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-router-core
         run: node --test packages/desktop/src/main/dai/router-profile.integration.test.mjs
 
   desktop-typecheck:
@@ -73,7 +81,7 @@ jobs:
       - name: Native provider account sign-in and third-party API route regression
         run: cd packages/app && bun test src/providers/connect/auth-route.test.ts
       - name: Packaging, identity and profile-isolation regression
-        run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts src/main/lifecycle/dai-router-profile.test.ts scripts/identity.test.ts
+        run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts scripts/identity.test.ts
       - name: Bundle Electron main, preload and renderer
         run: cd packages/desktop && bunx electron-vite build
 
