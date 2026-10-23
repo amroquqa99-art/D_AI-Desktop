@@ -66,3 +66,26 @@ test("rejects missing python executable or bad timeout", () => {
   assert.throws(() => launchDaiDesktopBridge({ python: "" }));
   assert.throws(() => launchDaiDesktopBridge({ python: "python", startupTimeoutMs: 0 }));
 });
+
+
+test("project paths are validated before network access and no secret is placed in URLs", async () => {
+  let called = 0;
+  let seen;
+  const client = createDaiDesktopClient({
+    baseUrl: "http://127.0.0.1:4000/", token: "q".repeat(64),
+    fetchImpl: async (url, opts) => {
+      called++;
+      seen = { url: String(url), opts };
+      return { ok: true, json: async () => ({ project_id: "client:project", missions: [] }) };
+    },
+  });
+  assert.deepEqual(await client.missions("client:project"),
+                   { project_id: "client:project", missions: [] });
+  assert.equal(called, 1);
+  assert.ok(seen.url.endsWith("/v1/projects/client:project/missions"));
+  assert.equal(seen.opts.method, "GET");
+  for (const id of ("../private", "", "bad/project", "%2F", "a".repeat(129))) {
+    await assert.rejects(client.missions(id), /identifier/);
+  }
+  assert.equal(called, 1);
+});
