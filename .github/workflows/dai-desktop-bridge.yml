@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: amroquqa99-art/D_AI
-          ref: 270eca2eb92b7369ff57f58e17cc717c00e62307
+          ref: 4d84f649b741369c572626bb0ee18e19fa5a7d23
           path: dai-core
       - uses: actions/setup-node@v4
         with:
@@ -37,6 +37,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install integrated D_AI Core
+        run: python -m pip install -e ./dai-core
       - name: JavaScript contract tests
         run: node --test packages/desktop/src/main/dai/bridge.test.mjs packages/desktop/src/main/dai/manager.test.mjs
       - name: Check Python bridge import and loopback bind
