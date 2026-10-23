@@ -137,6 +137,8 @@ export const dict = {
   "provider.connect.console.title": "Connecting to OpenCode Console",
   "provider.connect.console.titleGo": "Connecting to OpenCode Go",
   "provider.connect.console.intro": "Sign in with your OpenCode Console account to use the available models.",
+  "provider.connect.console.daiFreeAccount": "Sign in to your OpenCode account to access free-tier models available to your account. Availability is determined by OpenCode.",
+  "provider.connect.console.daiOtherProviders": "You can also connect supported subscriptions and API keys for other providers without disconnecting OpenCode. Models remain manually selectable.",
   "provider.connect.console.continue": "Continue in the browser",
   "provider.connect.console.retry": "Try again",
   "provider.connect.console.serviceKeyDescription": "Connect using a service-account API key from OpenCode Console.",
