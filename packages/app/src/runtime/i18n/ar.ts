@@ -156,6 +156,8 @@ export const dict = {
   "dialog.provider.viewAll": "عرض المزيد من الموفرين",
   "provider.connect.title": "الاتصال بـ {{provider}}",
   "provider.connect.selectMethod": "حدد طريقة تسجيل الدخول لـ {{provider}}.",
+  "provider.connect.console.daiFreeAccount": "سجّل الدخول بحساب OpenCode نفسه للوصول إلى النماذج المجانية المتاحة لحسابك. يحدد OpenCode النماذج المتاحة وشروط استخدامها.",
+  "provider.connect.console.daiOtherProviders": "يمكنك أيضًا ربط الاشتراكات المدعومة ومفاتيح API لمزوّدين آخرين دون فصل حساب OpenCode، مع بقاء اختيار النماذج يدويًا متاحًا.",
   "provider.connect.method.apiKey": "مفتاح API",
   "provider.connect.method.browser": "المتصفح",
   "provider.connect.method.headless": "بدون واجهة رسومية",
