@@ -32,7 +32,16 @@ export const layer = Layer.effect(
     const path = yield* Path.Path
 
     const resolve = yield* Effect.cached(
-      make().pipe(Effect.provide(yield* Effect.context<FileSystem.FileSystem | Path.Path>()), Effect.orDie),
+      make().pipe(
+        Effect.tap((cli) => Effect.sync(() => {
+          // D_AI's native form API must talk to this fork's active CLI, never
+          // another OpenCode binary or credential profile installed on the host.
+          if (process.env.DAI_ROUTER_DATA_ROOT)
+            process.env.DAI_OPENCODE_COMMAND_JSON = JSON.stringify(cli.command)
+        })),
+        Effect.provide(yield* Effect.context<FileSystem.FileSystem | Path.Path>()),
+        Effect.orDie,
+      ),
     )
 
     const install = Effect.gen(function* () {
