@@ -18,7 +18,7 @@ async function fixture(fn) {
       JSON.stringify(name === "routing-preferences.json"
         ? { schema_version: 1, global: { retrieval: { mode: "auto" },
             implementation: { mode: "auto" }, review: { mode: "auto" } }, projects: {} }
-        : { schema_version: 1 }) + "\\n");
+        : { schema_version: 1 }) + "\n");
   for (const name of ["agent", "skill", "command"]) {
     await fs.mkdir(path.join(adapter, name), { recursive: true });
     await fs.writeFile(path.join(adapter, name, "dummy.md"), "D_AI fixture");
