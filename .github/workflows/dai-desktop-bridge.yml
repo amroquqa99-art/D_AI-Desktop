@@ -12,6 +12,7 @@ on:
       - 'packages/desktop/scripts/**'
       - 'packages/desktop/src/main/constants.ts'
       - 'packages/desktop/src/main/lifecycle/**'
+      - 'packages/desktop/src/main/service/desktop-cli.ts'
       - 'packages/desktop/src/main/service/background-service.ts'
       - 'packages/desktop/src/main/index.ts'
       - 'packages/desktop/package.json'
@@ -68,7 +69,7 @@ jobs:
       - name: Native provider account sign-in and third-party API route regression
         run: cd packages/app && bun test src/providers/connect/auth-route.test.ts
       - name: Packaging, identity and profile-isolation regression
-        run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts scripts/identity.test.ts
+        run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts src/main/lifecycle/dai-router-profile.test.ts scripts/identity.test.ts
       - name: Bundle Electron main, preload and renderer
         run: cd packages/desktop && bunx electron-vite build
 
