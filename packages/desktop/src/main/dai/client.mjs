@@ -30,7 +30,7 @@ export function createDaiDesktopClient({ baseUrl, token, fetchImpl = globalThis.
           !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(projectId)) {
         throw new Error('Invalid D_AI project identifier');
       }
-      return request('/v1/projects/' + encodeURIComponent(projectId) + '/missions');
+      return request('/v1/projects/' + projectId + '/missions');
     },
   });
 }
