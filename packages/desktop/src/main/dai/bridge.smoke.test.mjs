@@ -47,7 +47,7 @@ test("real Python Core handshake and isolated mission readback", {
     assert.equal(missions.missions.length, 1);
     assert.equal(missions.missions[0].objective, "Verify Electron bridge");
     assert.ok(!JSON.stringify(missions).includes("PRIVATE_EVIDENCE_DO_NOT_RENDER"));
-    await assert.rejects(bridge.client.missions("../invalid"), /identifier/);
+    assert.throws(() => bridge.client.missions("../invalid"), /identifier/);
   } finally {
     if (bridge) await bridge.stop();
     fs.rmSync(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
