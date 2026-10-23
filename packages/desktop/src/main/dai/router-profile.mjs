@@ -37,6 +37,7 @@ export async function installDaiRouterProfile({
 
   // Only fork-owned roots may be written. This function never discovers ~/.config/opencode.
   const root = path.resolve(configDir);
+  const dataRoot = path.join(path.dirname(path.dirname(root)), "dai-router-data");
   if (path.basename(root) !== "opencode" ||
       path.basename(path.dirname(root)) !== "config" ||
       path.basename(path.dirname(path.dirname(root))) !== "cli-profile")
@@ -60,7 +61,6 @@ export async function installDaiRouterProfile({
   }
   try {
     const mainConfig = path.join(root, "opencode.jsonc");
-    const legacyConfig = path.join(root, "opencode.json");
     const manifestFile = path.join(root, "dai-router-install.json");
     const metadata = await fs.readFile(manifestFile, "utf8").then(JSON.parse).catch(error => {
       if (error.code === "ENOENT") return null;
@@ -70,10 +70,14 @@ export async function installDaiRouterProfile({
       const current = await fs.readFile(mainConfig).catch(() => null);
       const copied = await Promise.all(sources.map(async name =>
         (await fs.stat(path.join(root, name)).catch(() => null))?.isDirectory()));
-      return current && sha256(current) === metadata.config_sha256 && copied.every(Boolean) &&
-        metadata.core === core && metadata.router === router
-        ? { state: "installed", detail: "verified existing installation" }
-        : { state: "skipped", reason: "managed config/definitions changed; manual review required" };
+      const expectedDataRoot = metadata.data_root === dataRoot;
+      const policy = await fs.stat(path.join(dataRoot, "config", "routing-preferences.json")).catch(() => null);
+      if (current && sha256(current) === metadata.config_sha256 && copied.every(Boolean) &&
+          metadata.core === core && metadata.router === router && expectedDataRoot && policy?.isFile()) {
+        process.env.DAI_ROUTER_DATA_ROOT = dataRoot;
+        return { state: "installed", detail: "verified existing installation" };
+      }
+      return { state: "skipped", reason: "managed config/definitions changed; manual review required" };
     }
     // Treat ANY existing host config or definitions as user owned.
     for (const name of ["opencode.json", "opencode.jsonc", ...sources, "dai-router-install.json"]) {
@@ -85,6 +89,16 @@ export async function installDaiRouterProfile({
 
     const created = [];
     try {
+      // An independent persistent D_AI state root prevents runtime writes to the
+      // source checkout, and seeds Auto policy without restricting paid models.
+      if (await fs.lstat(dataRoot).then(() => true, error => {
+        if (error.code === "ENOENT") return false;
+        throw error;
+      })) return { state: "skipped", reason: "existing D_AI router data root; refusing overwrite" };
+      await fs.mkdir(path.join(dataRoot, "config"), { recursive: true, mode: privateMode });
+      created.push(dataRoot);
+      for (const name of ["routing-preferences.json", "model-profiles.json", "model-routing-policy.json"])
+        await fs.copyFile(path.join(core, "config", name), path.join(dataRoot, "config", name), fs.constants.COPYFILE_EXCL);
       for (const name of sources) {
         const target = path.join(root, name);
         await fs.cp(path.join(adapter, name), target, {
@@ -101,12 +115,13 @@ export async function installDaiRouterProfile({
       await fs.writeFile(mainConfig, bytes, { flag: "wx", mode: 0o600 });
       created.push(mainConfig);
       const manifest = {
-        schema_version: 1, core, router, config_sha256: sha256(bytes),
+        schema_version: 1, core, router, data_root: dataRoot, config_sha256: sha256(bytes),
         installed_at: new Date().toISOString(),
         managed_paths: [...sources, "opencode.jsonc"],
       };
       await fs.writeFile(manifestFile, JSON.stringify(manifest, null, 2) + "\n", { flag: "wx", mode: 0o600 });
-      return { state: "installed", detail: "D_AI native router and agent definitions enabled" };
+      process.env.DAI_ROUTER_DATA_ROOT = dataRoot;
+      return { state: "installed", detail: "D_AI native router, Auto policy and agents enabled" };
     } catch (error) {
       // Delete ONLY files this attempt created and only before a managed manifest exists.
       // An interrupted installation is intentionally left for human review.
