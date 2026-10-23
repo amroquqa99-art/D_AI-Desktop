@@ -15,6 +15,11 @@ import type {
 export type ElectronAPI = {
   daiDesktopStatus(): Promise<{ state: "disabled" | "starting" | "connected" | "unavailable"; mode: "none" | "read_only"; version: string | null }>
   daiDesktopSystems(): Promise<Array<{ id: string; primary: string | null; roles: string[]; maturity: string; professional_validation: string }>>
+  daiDesktopProjects(): Promise<Array<{ id: string; name: string }>>
+  daiDesktopMissions(projectId: string): Promise<Array<{
+    id: string; system: string; objective: string; status: string;
+    next_action: string; version: number;
+  }>>
   awaitInitialization(): Promise<ServerReadyData>
   reconnectService(): Promise<ServerReadyData>
   consumeInitialDeepLinks(): Promise<string[]>
