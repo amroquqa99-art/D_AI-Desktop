@@ -1299,6 +1299,14 @@ function ProviderConnection(props: {
     return (
       <div class="flex flex-col items-start gap-5 px-3">
         <p class="text-[13px] leading-5 text-v2-text-text-muted">{language.t("provider.connect.console.intro")}</p>
+        <Show when={props.provider === "opencode"}>
+          <p data-component="dai-opencode-free-account" class="text-[13px] leading-5 text-v2-text-text-muted">
+            {language.t("provider.connect.console.daiFreeAccount")}
+          </p>
+        </Show>
+        <p data-component="dai-multiple-providers" class="text-[13px] leading-5 text-v2-text-text-muted">
+          {language.t("provider.connect.console.daiOtherProviders")}
+        </p>
         <Button
           size="large"
           class="!px-3"
