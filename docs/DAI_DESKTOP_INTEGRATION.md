@@ -202,12 +202,14 @@ or external inference request was made by these automated tests.
 
 ## M7: Opt-in native V2 D_AI agent/model-router registration (2026-10-23)
 
-The fork now offers a source-level, **opt-in** installation path for
-D_AI Core's native V2 plugin and four required agent definitions inside
-D_AI Desktop's **own** OpenCode CLI profile. Nothing is downloaded or
-copied from the user's original OpenCode account/credentials.
+The Desktop fork now contains a single **opt-in** installer at
+`packages/desktop/src/main/dai/router-profile.mjs`, triggered before
+the background CLI service starts. It acts only on this fork's
+`userData/cli-profile/config/opencode`; it never migrates native OpenCode
+OAuth tokens, subscription connections or API-key credentials.
 
-Development setup, with an absolute checkout path:
+For development, explicitly authorize a **reviewed local** D_AI Core
+checkout containing PR #30's native V2 router and default Auto policy:
 
 ```sh
 DAI_DESKTOP_CORE_CWD=/absolute/path/to/reviewed/D_AI \
@@ -215,47 +217,39 @@ DAI_DESKTOP_ROUTER_ENABLE=1 \
 bun run --cwd packages/desktop dev
 ```
 
-This requires a reviewed D_AI checkout containing Core PR #30's
-`adapters/opencode/router/{index.js,core.js,value.js}`,
-`config/{routing-preferences.json,model-routing-policy.json,model-profiles.json}`
-and the four required agent Markdown definitions. **These parts are not
-yet packaged together with Core PR #29's read-only mission bridge in
-one verified Core revision**; do not claim both work together until
-that integration is explicitly tested.
+Only the **fresh fork profile** is modified: the installer refuses any
+preexisting OpenCode JSON/JSONC config, agent/skill/command definitions,
+data root, suspicious target symlinks or altered managed manifest. It
+copies Core's full `agent`, `skill` and `command` definitions, registers
+the native plugin as a V2 absolute `plugins` path in a fresh
+`opencode.jsonc`, sets `default_agent: dai-os` but does **not** set a
+main-session model, and seeds free+paid Auto preferences into
+`userData/cli-profile/dai-router-data/config`. The managed manifest is
+checked on subsequent opt-in attempts, and changed user files are left
+untouched. The plugin remains registered after the one-time
+installation flag is removed; it must be uninstalled explicitly by the
+owner from this fork profile.
 
-The installer:
-- registers the local router as a V2 `plugins` directory;
-- registers `dai-os`, `dai/shared/explorer`,
-  `dai/engineer/implementer` and `dai/shared/reviewer`
-  as V2 `agents` from the reviewed Core Markdown definitions;
-- selects `dai-os` only if the owner has no explicit `default_agent`;
-- copies default Auto/free+paid *worker* policies into
-  `userData/cli-profile/dai-router/config` **only if not already present**;
-- retains native `model`, provider credentials, `plugins`, existing
-  agent overrides and all other original fork-profile configuration keys;
-- backs up a preexisting JSON file before modifying it and refuses to
-  rewrite JSONC (or symlinks) automatically;
-- binds D_AI native form requests to the fork's resolved CLI command
-  (including the Bun development command). The Core plugin honors
-  `DAI_ROUTER_DATA_ROOT` and never has to use the original installation's
-  user profile or routing state.
+The Electron main process always provides this fork's private
+`DAI_ROUTER_DATA_ROOT` across subsequent launches; its resolved
+CLI command is passed as `DAI_OPENCODE_COMMAND_JSON` so the plugin's native
+form API cannot silently invoke a different installed OpenCode client.
+Core PR #30 fixes the router's original data-root resolution and tests
+the explicit CLI command. Source-controlled Core defaults are never
+modified by the fork's running router.
 
-Installation is persisted in the fork profile; remove the plugin/agent
-entries manually in the fork's config to uninstall it. Disabling the
-`DAI_DESKTOP_ROUTER_ENABLE` flag on later starts *does not* uninstall a
-previously installed plugin. Do not place a checkout with untrusted
-executable code in `DAI_DESKTOP_CORE_CWD`.
+**Important version boundary:** Core PR #29's draft read-only mission
+bridge and Core PR #30's draft value router are not yet reconciled in
+one verified Core revision. The Desktop CI therefore pins two separate
+Core checkouts and tests bridge and router independently. A green
+contract test does **not** imply both share one live Python/JS Core
+environment, or that a packaged Electron app activated the plugin.
 
-Core PR #30 now fixes the old source-root resolution (it had resolved
-`adapters/` rather than the Core root) and accepts the active native
-Desktop CLI command through `DAI_OPENCODE_COMMAND_JSON`. A Core test
-checks the isolated data root and nonfallback command execution.
-
-**Remaining gates:** Native V2 plugin activation inside the fork's
-actual running CLI; authenticated Console OAuth and free-model request;
-a parallel third-party subscribed/paid-provider request; real native
-agent creation, task routing, review and UI receipt; combined Core PRs;
-native Windows/Linux/macOS packaging, protection of external plugin
-paths and crash/power-loss recovery. Tests of file registration,
-TypeScript and JS bundles do not establish successful live inference,
-server-side free-tier eligibility or a secure OS process sandbox.
+**Still required before a release:** reconcile the Core branches;
+verify actual V2 agent/skill/command activation and delegation through
+the running OpenCode CLI; authenticated Console sign-in and free-model
+inference in the independently branded fork; simultaneous third-party
+subscription/API use; native GUI E2E, permissions/receipts,
+Windows/macOS/Linux packaging and security/supply-chain review. OpenCode
+Console free-tier entitlement is provider-controlled; do not spoof an
+official client or assume a branded fork has automatic access.
