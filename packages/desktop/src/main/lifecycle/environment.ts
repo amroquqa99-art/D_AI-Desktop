@@ -7,7 +7,7 @@ import { getUserShell, loadShellEnv } from "../service/shell-env"
 import { registerRendererProtocol, setDockIcon, setProtocolReporter } from "../windows"
 import { scoped } from "../native/logging"
 import { forkCliEnvironment, useForkProfile } from "./profile"
-import { daiRouterStateRoot } from "./dai-router-profile"
+import path from "node:path"
 
 // electron-context-menu attaches to every existing and future window, so it can load once the first
 // window is up instead of holding up startup with its dependency tree.
@@ -31,7 +31,7 @@ export const preferApplicationEnvironment = Effect.gen(function* () {
       // The user shell can contain OpenCode-specific environment overrides.
       // Restore the isolated D_AI roots *after* importing the shell environment.
       ...(useForkProfile() ? forkCliEnvironment(app.getPath("userData")) : {}),
-      ...(useForkProfile() ? { DAI_ROUTER_DATA_ROOT: daiRouterStateRoot(app.getPath("userData")) } : {}),
+      ...(useForkProfile() ? { DAI_ROUTER_DATA_ROOT: path.join(app.getPath("userData"), "cli-profile", "dai-router-data") } : {}),
       OPENCODE_EXPERIMENTAL_ICON_DISCOVERY: "true",
       OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
       OPENCODE_CLIENT: "desktop",
