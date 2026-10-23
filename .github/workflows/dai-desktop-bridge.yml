@@ -42,7 +42,7 @@ jobs:
           repository: amroquqa99-art/D_AI
           # Core model value-router PR #30; until stacked bridge/router are reconciled,
           # test the router against this checkout without misrepresenting bridge coverage.
-          ref: a4837c9c9f91094cf67529f60a1cc54279da3070
+          ref: 9a2ebb1fc56501e3160bb102cf88eb883a95356e
           path: dai-router-core
       - uses: actions/setup-node@v4
         with:
