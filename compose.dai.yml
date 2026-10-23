@@ -1,0 +1,8 @@
+services:
+  verify:
+    build:
+      context: .
+      dockerfile: integrations/dai/Dockerfile
+    working_dir: /app
+    command: ["python", "-m", "unittest", "discover", "-s", "tests", "-p", "test_dai_desktop_integration.py", "-v"]
+    network_mode: "none"
