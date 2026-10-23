@@ -145,3 +145,19 @@ round trips, manual GUI accessibility, mission execution, approval receipts,
 model routing, plugin/sandbox behavior, signed updates, power-loss durability,
 or application release quality. Upstream inherited workflows on Blacksmith
 runners can remain queued and are not represented as completed by this run.
+
+## OpenCode free-model compatibility (M6 partial)
+
+The upstream OpenCode Console provider, account login and model picker are
+preserved. Inherited OpenCode has available free models, but Console may
+restrict free-tier access to the original OpenCode clients; availability in
+this separately branded fork is **not guaranteed**. No attempt to spoof
+the official client or bypass provider-side eligibility is permitted.
+
+D_AI Core [PR #29](https://github.com/amroquqa99-art/D_AI/pull/29)
+now adds free-only **recommendation routing**, default-on for its native
+MCP tool. It rejects unknown, unverified or nonzero input/output-cost
+models rather than spending automatically. This does not change manual
+OpenCode chat model choice, and D_AI mission execution is not wired.
+See `docs/OPEN_CODE_FREE_MODELS.md` for connection steps, restrictions
+and live-provider verification gates.
