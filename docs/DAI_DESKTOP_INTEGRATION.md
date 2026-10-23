@@ -161,3 +161,40 @@ models rather than spending automatically. This does not change manual
 OpenCode chat model choice, and D_AI mission execution is not wired.
 See `docs/OPEN_CODE_FREE_MODELS.md` for connection steps, restrictions
 and live-provider verification gates.
+
+
+## M6: OpenCode account, subscription and API-key coexistence (2026-10-23)
+
+D_AI Desktop retains the native OpenCode V2 Provider Connect dialog. For OpenCode's
+free-tier models, select **OpenCode Console** and **Continue in the browser**;
+the inherited `opencode` integration performs OAuth device authorization using
+the original OpenCode Console endpoint, then discovers account-scoped model
+availability. The fork must never fabricate a Console credential, harvest
+cookies from the original OpenCode installation or claim the model is free
+simply because of its name.
+
+OpenCode Go users may sign into the Console or choose the API-key method.
+The Go service-account API key is still stored against `opencode-go` and is
+not incorrectly remapped to the standard `opencode` key. Any *supported*
+other provider subscription OAuth and provider API keys (e.g. OpenAI,
+Anthropic, Google, OpenRouter) stay with their native integration identities,
+so OpenCode account sign-in does not disconnect or override them. Main-session
+model selection remains fully manual; the D_AI Core cost/quality Auto
+router is a separate pending Desktop integration, not a replacement for the
+native OpenCode picker.
+
+The dialog now explains these options in English and Arabic and shares a pure,
+tested authentication-routing contract across sign-in and key entry.
+CI adds a Bun regression for OpenCode/Go identity separation, non-Console
+providers, and bilingual UI copy. The checkout runs inside a separate
+`userData/cli-profile`, never reading the upstream OpenCode credential store.
+
+**Compatibility warning:** Official OpenCode V2 documentation reserves some
+free-tier chat models for the OpenCode client; other coding harnesses may be
+rejected with HTTP 403 even using a legitimate Console API key. Preserving
+OpenCode's genuine login and service implementation is necessary, but **not
+proof that an independently branded fork qualifies for the free-tier access**.
+No provider entitlement bypass or forged client identity should be added.
+Only a real authenticated request to a documented free model from a packaged
+D_AI Desktop build can close this acceptance gate. No actual sign-in, payment
+or external inference request was made by these automated tests.
