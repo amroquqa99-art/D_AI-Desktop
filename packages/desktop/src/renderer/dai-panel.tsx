@@ -6,9 +6,16 @@ import type { ElectronAPI } from "./api-types"
 
 export function DaiDesktopPanel(props: { api: ElectronAPI }) {
   const [opened, setOpened] = createSignal(false)
+  const [selectedProject, setSelectedProject] = createSignal("")
   const [status, { refetch: refreshStatus }] = createResource(() => props.api.daiDesktopStatus())
   const [systems, { refetch: refreshSystems }] = createResource(
     opened, (active) => active ? props.api.daiDesktopSystems() : Promise.resolve([]),
+  )
+  const [projects, { refetch: refreshProjects }] = createResource(
+    opened, (active) => active ? props.api.daiDesktopProjects() : Promise.resolve([]),
+  )
+  const [missions, { refetch: refreshMissions }] = createResource(
+    selectedProject, (projectId) => projectId ? props.api.daiDesktopMissions(projectId) : Promise.resolve([]),
   )
   const stateText = () => {
     const state = status()?.state
@@ -19,12 +26,18 @@ export function DaiDesktopPanel(props: { api: ElectronAPI }) {
     return "Checking"
   }
   const toggle = () => {
-    setOpened(!opened())
+    const next = !opened()
+    setOpened(next)
+    if (!next) setSelectedProject("")
     void refreshStatus()
   }
   const refresh = () => {
     void refreshStatus()
-    if (opened()) void refreshSystems()
+    if (opened()) {
+      void refreshSystems()
+      void refreshProjects()
+      if (selectedProject()) void refreshMissions()
+    }
   }
 
   return (
@@ -69,6 +82,55 @@ export function DaiDesktopPanel(props: { api: ElectronAPI }) {
                 )}
               </For>
             </ul>
+            <div class="mt-5 border-t border-border-base pt-3">
+              <h3 class="text-sm font-semibold">Projects and missions</h3>
+              <p class="mt-1 text-xs text-text-weak">
+                Read-only project summaries. Evidence files and approval actions are not exposed.
+              </p>
+              <Show when={projects.error}>
+                <p class="mt-2 text-xs text-text-weak" role="status">Project catalog is not available.</p>
+              </Show>
+              <Show when={(projects() || []).length > 0} fallback={
+                <p class="mt-2 text-xs text-text-weak">No accessible projects or the mission service is unavailable.</p>
+              }>
+                <label class="mt-3 block text-xs text-text-weak" for="dai-project-select">
+                  Project
+                </label>
+                <select
+                  id="dai-project-select" value={selectedProject()}
+                  class="mt-1 w-full rounded-md border border-border-base bg-background-base p-2 text-sm"
+                  onChange={(event) => setSelectedProject(event.currentTarget.value)}
+                >
+                  <option value="">Select a project</option>
+                  <For each={projects() || []}>
+                    {(project) => <option value={project.id}>{project.name}</option>}
+                  </For>
+                </select>
+              </Show>
+              <Show when={selectedProject()}>
+                <Show when={missions.loading}>
+                  <p class="mt-3 text-xs text-text-weak">Reading missions…</p>
+                </Show>
+                <Show when={missions.error}>
+                  <p class="mt-3 text-xs text-text-weak" role="status">Mission data is not available.</p>
+                </Show>
+                <ul class="mt-3 space-y-2" aria-label="D_AI project missions">
+                  <For each={missions() || []}>
+                    {(mission) => (
+                      <li class="rounded-lg border border-border-base p-2">
+                        <div class="flex justify-between gap-2">
+                          <span class="text-sm font-medium">{mission.system}</span>
+                          <span class="text-xs text-text-weak">{mission.status}</span>
+                        </div>
+                        <p class="mt-1 text-xs">{mission.objective}</p>
+                        <p class="mt-1 text-xs text-text-weak">Next: {mission.next_action}</p>
+                        <p class="mt-1 text-xs text-text-weak">Version {mission.version}</p>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
+            </div>
           </Show>
         </section>
       </Show>
