@@ -44,12 +44,12 @@ import { Persistence } from "@/runtime/persistence/schema"
 import { Schema } from "effect"
 import {
   CONSOLE_PROVIDERS,
-  consoleIntegration,
   createProviderConnectionController,
   providerFormDefaults,
   type ProviderConnectMethod,
 } from "./controller"
 import { ConsoleAuthorization } from "./console"
+import { providerConnectionTargets } from "./auth-route"
 import { DialogChatGPTPlanWelcome } from "./chatgpt-welcome"
 import { authServerName, RemoteAuthNotice } from "./remote"
 import { providerAccounts, type ProviderAccount } from "@/settings/providers/accounts"
@@ -431,7 +431,8 @@ function ProviderConnection(props: {
   const providers = useProviders(directory)
   const integrations = useIntegrations(directory)
   const accountActions = useProviderAccountActions(directory)
-  const integrationID = consoleIntegration(props.provider)
+  const authTargets = providerConnectionTargets(props.provider)
+  const integrationID = authTargets.signIn
   const isConsole = CONSOLE_PROVIDERS.has(props.provider)
   const remote = isConsole && authServerName(sdk.server) !== undefined
 
@@ -477,7 +478,7 @@ function ProviderConnection(props: {
     provider: () => integrationID,
     // A Go service-account key still belongs to the `opencode-go` integration (zen/go/v1),
     // exactly as before; only the sign-in is shared with the Console.
-    keyProvider: () => props.provider,
+    keyProvider: () => authTargets.apiKey,
     directory,
     manual: () => isConsole || (!!props.accounts && accounts().length > 0),
     prepare: isConsole ? prepareConsoleCatalog : undefined,
@@ -1299,6 +1300,14 @@ function ProviderConnection(props: {
     return (
       <div class="flex flex-col items-start gap-5 px-3">
         <p class="text-[13px] leading-5 text-v2-text-text-muted">{language.t("provider.connect.console.intro")}</p>
+        <Show when={props.provider === "opencode"}>
+          <p data-component="dai-opencode-free-account" class="text-[13px] leading-5 text-v2-text-text-muted">
+            {language.t("provider.connect.console.daiFreeAccount")}
+          </p>
+        </Show>
+        <p data-component="dai-multiple-providers" class="text-[13px] leading-5 text-v2-text-text-muted">
+          {language.t("provider.connect.console.daiOtherProviders")}
+        </p>
         <Button
           size="large"
           class="!px-3"

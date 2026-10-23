@@ -1,0 +1,94 @@
+name: D_AI Desktop bridge smoke
+on:
+  pull_request:
+    paths:
+      - 'packages/desktop/src/main/dai/**'
+      - 'packages/desktop/src/main/desktop.ts'
+      - 'packages/desktop/src/main/ipc.ts'
+      - 'packages/desktop/src/main/ipc-handlers/dai.ts'
+      - 'packages/desktop/src/shared/ipc-rpc**'
+      - 'packages/desktop/src/renderer/**'
+      - 'packages/desktop/electron-builder.config*'
+      - 'packages/desktop/scripts/**'
+      - 'packages/desktop/src/main/constants.ts'
+      - 'packages/desktop/src/main/lifecycle/**'
+      - 'packages/desktop/src/main/service/desktop-cli.ts'
+      - 'packages/desktop/src/main/service/background-service.ts'
+      - 'packages/desktop/src/main/index.ts'
+      - 'packages/desktop/package.json'
+      - 'packages/app/src/providers/connect/**'
+      - 'packages/app/src/runtime/i18n/**'
+      - '.github/workflows/dai-desktop-bridge.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: amroquqa99-art/D_AI
+          # Stacked Core read-only bridge PR #29, not the Core model-routing branch.
+          ref: 740a190d03be343e710c778d28aeb8fa364f99d7
+          path: dai-core
+      - uses: actions/checkout@v4
+        with:
+          repository: amroquqa99-art/D_AI
+          # Core model value-router PR #30; until stacked bridge/router are reconciled,
+          # test the router against this checkout without misrepresenting bridge coverage.
+          ref: 9a2ebb1fc56501e3160bb102cf88eb883a95356e
+          path: dai-router-core
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install integrated D_AI Core
+        run: python -m pip install -e ./dai-core
+      - name: JavaScript contract tests
+        run: node --test packages/desktop/src/main/dai/bridge.test.mjs packages/desktop/src/main/dai/manager.test.mjs packages/desktop/src/main/dai/router-profile.test.mjs
+      - name: Check Python bridge import and loopback bind
+        env:
+          PYTHONPATH: ${{ github.workspace }}/dai-core/src
+          DAI_BRIDGE_CATALOG: ${{ github.workspace }}/dai-core/config/systems.json
+        run: python -c "import os; from pathlib import Path; from dai.desktop_bridge import read_catalog,make_server; s=make_server('x'*48,read_catalog(Path(os.environ['DAI_BRIDGE_CATALOG'])),0); print('D_AI core can bind loopback:',s.server_port); s.server_close()"
+      - name: Real D_AI core handshake
+        env:
+          DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-core
+          DAI_TEST_PYTHON: python
+        run: node --test packages/desktop/src/main/dai/bridge.smoke.test.mjs
+      - name: Real pinned D_AI native V2 router and Auto preference integration
+        env:
+          DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-router-core
+        run: node --test packages/desktop/src/main/dai/router-profile.integration.test.mjs
+
+  desktop-typecheck:
+    name: Desktop TypeScript compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bun and workspace dependencies
+        uses: ./.github/actions/setup-bun
+      - name: Typecheck Desktop package
+        run: bun run --cwd packages/desktop typecheck
+      - name: Native provider account sign-in and third-party API route regression
+        run: cd packages/app && bun test src/providers/connect/auth-route.test.ts
+      - name: Packaging, identity and profile-isolation regression
+        run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts scripts/identity.test.ts
+      - name: Bundle Electron main, preload and renderer
+        run: cd packages/desktop && bunx electron-vite build
+
+  docker-bridge:
+    name: Docker Compose offline contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute tests in isolated container
+        run: docker compose -f desktop/compose.yaml up --build --abort-on-container-exit --exit-code-from bridge-contract

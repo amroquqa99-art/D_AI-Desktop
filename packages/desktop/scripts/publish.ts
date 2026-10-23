@@ -3,6 +3,10 @@
 import { Script } from "@opencode/script"
 import { UpdateArtifact } from "../../../script/update-artifact"
 
+// Release pipeline is not yet audited. Fail closed rather than uploading to
+// the inherited OpenCode updater or issuing a misleading release.
+throw new Error("D_AI Desktop public publishing is disabled until the project owns an audited signing and update channel")
+
 const dryRun = process.argv.includes("--dry-run")
 
 if (!Script.release) {

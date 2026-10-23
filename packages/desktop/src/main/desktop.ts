@@ -32,6 +32,14 @@ const runIpc = Effect.fn("Desktop.runIpc")(function* () {
   const logging = yield* DesktopLogging.Service
   yield* logging.startCrashReporter
   yield* installContextMenu
+  // Optional GPL D_AI companion. It runs ONLY inside the Electron main process.
+  // Unconfigured/failed D_AI never blocks the original OpenCode startup.
+  if (process.env.DAI_DESKTOP_BRIDGE_PYTHON) {
+    void import("./dai/manager.mjs")
+      .then(({ daiDesktopManager }) => daiDesktopManager.start(app)
+        .then(({ state }) => console.info("[D_AI Desktop] bridge:", state)))
+      .catch(() => console.warn("[D_AI Desktop] bridge integration unavailable"))
+  }
   yield* Effect.callback<void>((resume) => {
     const quit = () => resume(Effect.void)
     app.once("will-quit", quit)

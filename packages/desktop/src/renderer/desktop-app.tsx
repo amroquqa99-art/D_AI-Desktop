@@ -21,6 +21,7 @@ import { createEffect, createMemo, createResource, lazy, Show, Suspense } from "
 import { createStore } from "solid-js/store"
 import type { ElectronAPI } from "./api-types"
 import { DesktopFirstLaunchOnboarding } from "./onboarding"
+import { DaiDesktopPanel } from "./dai-panel"
 import { createDesktopPlatform } from "./platform"
 import { bindDesktopMenu } from "./platform/menu"
 import { createSidecarResolver, initializationData, sidecarHttp } from "./startup/initialization"
@@ -122,6 +123,7 @@ export function DesktopApp(props: { api: ElectronAPI; version: string }) {
             onReady={() => setStartup("onboardingReady", true)}
           />
           <DesktopEffects api={props.api} />
+          <DaiDesktopPanel api={props.api} />
           <Suspense fallback={null}>
             <Show when={initializationData(sidecar)} keyed>
               {(server) => <MigrationStatus server={server} />}

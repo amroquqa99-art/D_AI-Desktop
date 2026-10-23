@@ -5,6 +5,7 @@ import { homedir, tmpdir } from "node:os"
 import path from "node:path"
 import { app } from "electron"
 import { APP_ID, APP_NAME } from "../constants"
+import { forkCliEnvironment, useForkProfile } from "./profile"
 
 const testOnboarding = process.env.OPENCODE_TEST_ONBOARDING === "1"
 
@@ -31,6 +32,17 @@ export function configureApplication() {
 
   const testRoot = createTestRoot()
   app.setPath("userData", testRoot ? path.join(testRoot, "desktop") : path.join(app.getPath("appData"), APP_ID))
+
+  // This runs before the first OpenCode CLI service discovery/startup. Never
+  // reuse the existing OpenCode user profile or service registration.
+  if (useForkProfile()) {
+    const userData = app.getPath("userData")
+    Object.assign(process.env, forkCliEnvironment(userData))
+    // Match the single async, opt-in installer in main/dai/router-profile.mjs.
+    // Persisted plugin installations must reuse the SAME independent state
+    // even when the one-time installation flag is unset on later launches.
+    process.env.DAI_ROUTER_DATA_ROOT = path.join(userData, "cli-profile", "dai-router-data")
+  }
 
   if (testRoot) {
     app.setPath("sessionData", path.join(testRoot, "session"))

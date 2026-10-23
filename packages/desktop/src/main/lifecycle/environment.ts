@@ -6,6 +6,8 @@ import { DesktopPaths } from "../paths"
 import { getUserShell, loadShellEnv } from "../service/shell-env"
 import { registerRendererProtocol, setDockIcon, setProtocolReporter } from "../windows"
 import { scoped } from "../native/logging"
+import { forkCliEnvironment, useForkProfile } from "./profile"
+import path from "node:path"
 
 // electron-context-menu attaches to every existing and future window, so it can load once the first
 // window is up instead of holding up startup with its dependency tree.
@@ -23,9 +25,13 @@ export const preferApplicationEnvironment = Effect.gen(function* () {
   const shell = process.platform === "win32" ? null : getUserShell()
   const shellEnv = shell ? yield* loadShellEnv(shell) : null
   yield* Effect.sync(() => {
-    if (!shellEnv?.XDG_STATE_HOME) delete process.env.XDG_STATE_HOME
+    if (!shellEnv?.XDG_STATE_HOME && !useForkProfile()) delete process.env.XDG_STATE_HOME
     Object.assign(process.env, {
       ...shellEnv,
+      // The user shell can contain OpenCode-specific environment overrides.
+      // Restore the isolated D_AI roots *after* importing the shell environment.
+      ...(useForkProfile() ? forkCliEnvironment(app.getPath("userData")) : {}),
+      ...(useForkProfile() ? { DAI_ROUTER_DATA_ROOT: path.join(app.getPath("userData"), "cli-profile", "dai-router-data") } : {}),
       OPENCODE_EXPERIMENTAL_ICON_DISCOVERY: "true",
       OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
       OPENCODE_CLIENT: "desktop",
@@ -38,7 +44,7 @@ export const prepareDesktop = Effect.gen(function* () {
   const paths = yield* DesktopPaths.resolve
 
   if (app.isPackaged || process.env.OPENCODE_DESKTOP_DISABLE_PROTOCOL_REGISTRATION !== "1")
-    app.setAsDefaultProtocolClient("opencode")
+    app.setAsDefaultProtocolClient("dai-desktop")
   const runFork = Effect.runForkWith(yield* Effect.context())
   setProtocolReporter((level, message, data) =>
     runFork(scoped("protocol", level === "error" ? Effect.logError(message, data) : Effect.logWarning(message, data))),

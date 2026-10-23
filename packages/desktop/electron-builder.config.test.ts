@@ -13,9 +13,9 @@ import { CLI_BINARIES, nodePtyPackage } from "./scripts/utils"
 const { FileMatcher } = createRequire(import.meta.resolve("electron-builder"))("app-builder-lib/out/fileMatcher")
 
 const channels = [
-  { channel: "dev", appId: "ai.opencode.desktop.dev" },
-  { channel: "beta", appId: "ai.opencode.desktop.beta" },
-  { channel: "prod", appId: "ai.opencode.desktop" },
+  { channel: "dev", appId: "online.amroquqa.dai.desktop.dev" },
+  { channel: "beta", appId: "online.amroquqa.dai.desktop.beta" },
+  { channel: "prod", appId: "online.amroquqa.dai.desktop" },
 ] as const
 
 function load(channel: string, target?: string): Configuration {
@@ -56,10 +56,12 @@ test.each(channels)("channel identity for $channel", ({ channel, appId }) => {
 
   for (const fpm of [config.deb?.fpm, config.rpm?.fpm]) {
     expect(fpm).toContainEqual(expect.stringContaining(`/usr/share/metainfo/${appId}.metainfo.xml`))
-    expect(
-      fpm?.some((entry) => entry.endsWith("opencode-desktop.desktop=/usr/share/applications/opencode-desktop.desktop")),
-    ).toBe(channel === "prod")
+    expect(fpm?.some((entry) => entry.includes("opencode-desktop.desktop="))).toBe(false)
   }
+  expect(config.publish).toEqual([])
+  expect(config.productName).toBe(channel === "prod" ? "D_AI Desktop" : channel === "dev" ? "D_AI Desktop Dev" : "D_AI Desktop Beta")
+  expect(config.protocols?.schemes).toEqual(["dai-desktop"])
+
 
   // Shared Electron binaries must not ship /usr/lib/.build-id links that collide with other Electron RPMs.
   // fpm rejects flags after the first src=dest mapping, so the flag must come first.

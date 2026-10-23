@@ -38,6 +38,11 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
   const cli = yield* desktopCli.resolve
   const version = mode === "initial" ? cli.version : undefined
 
+  // An already installed D_AI plugin remains active after opt-in is removed.
+  // Always bind native form requests to THIS fork's CLI command (including
+  // Bun development mode), never to the user's other OpenCode installation.
+  process.env.DAI_OPENCODE_COMMAND_JSON = JSON.stringify(cli.command)
+
   if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
   const client = yield* Effect.promise(() => import("@opencode/client/service"))
 
