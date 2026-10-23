@@ -24,5 +24,13 @@ export function createDaiDesktopClient({ baseUrl, token, fetchImpl = globalThis.
     health: () => request('/v1/health'),
     systems: () => request('/v1/systems'),
     capabilities: () => request('/v1/capabilities'),
+    projects: () => request('/v1/projects'),
+    missions: (projectId) => {
+      if (typeof projectId !== 'string' ||
+          !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(projectId)) {
+        throw new Error('Invalid D_AI project identifier');
+      }
+      return request('/v1/projects/' + encodeURIComponent(projectId) + '/missions');
+    },
   });
 }
