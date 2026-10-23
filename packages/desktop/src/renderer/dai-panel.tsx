@@ -59,6 +59,13 @@ export function DaiDesktopPanel(props: { api: ElectronAPI }) {
           <p class="mt-3 text-xs text-text-weak">
             Read-only integration. Execution and approvals are not connected yet.
           </p>
+          <p class="mt-2 text-xs text-text-weak">
+            Free OpenCode models: connect your OpenCode Console account in the
+            original Providers settings, then select an available free model in
+            the existing model picker. D_AI Desktop keeps its own login. The
+            hosted service may restrict free-tier access for derivative clients;
+            this panel does not bypass provider eligibility.
+          </p>
           <Show when={status()?.state === "connected"} fallback={
             <p class="mt-4 text-sm text-text-weak">
               Set DAI_DESKTOP_BRIDGE_PYTHON in the desktop environment to connect D_AI Core.
