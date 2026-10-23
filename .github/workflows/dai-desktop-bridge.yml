@@ -13,6 +13,8 @@ on:
       - 'packages/desktop/src/main/constants.ts'
       - 'packages/desktop/src/main/lifecycle/**'
       - 'packages/desktop/package.json'
+      - 'packages/app/src/providers/connect/**'
+      - 'packages/app/src/runtime/i18n/**'
       - '.github/workflows/dai-desktop-bridge.yml'
   workflow_dispatch:
 permissions:
@@ -61,6 +63,8 @@ jobs:
         uses: ./.github/actions/setup-bun
       - name: Typecheck Desktop package
         run: bun run --cwd packages/desktop typecheck
+      - name: Native provider account sign-in and third-party API route regression
+        run: cd packages/app && bun test src/providers/connect/auth-route.test.ts
       - name: Packaging, identity and profile-isolation regression
         run: cd packages/desktop && bun test electron-builder.config.test.ts src/main/lifecycle/deep-link.test.ts src/main/lifecycle/profile.test.ts scripts/identity.test.ts
       - name: Bundle Electron main, preload and renderer
