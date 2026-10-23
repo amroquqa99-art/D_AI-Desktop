@@ -73,13 +73,54 @@ export function createDaiDesktopManager({ launch = launchDaiDesktopBridge } = {}
     return snapshot();
   };
   const list = () => state === "connected" ? systems.map(s => ({ ...s, roles: [...s.roles] })) : [];
+  const projectPattern = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
+  const projects = async () => {
+    if (state !== "connected" || !child) throw new Error("D_AI Core is not connected");
+    const data = await child.client.projects();
+    if (!Array.isArray(data?.projects) || data.projects.length > 100) {
+      throw new Error("Invalid D_AI projects response");
+    }
+    return data.projects.map((item) => {
+      if (!item || typeof item.id !== "string" || !projectPattern.test(item.id) ||
+          typeof item.name !== "string" || item.name.length > 300) {
+        throw new Error("Malformed D_AI project metadata");
+      }
+      return { id: item.id, name: item.name };
+    });
+  };
+  const missions = async (projectId) => {
+    if (typeof projectId !== "string" || !projectPattern.test(projectId)) {
+      throw new Error("Invalid D_AI project identifier");
+    }
+    if (state !== "connected" || !child) throw new Error("D_AI Core is not connected");
+    const data = await child.client.missions(projectId);
+    if (data?.project_id !== projectId || !Array.isArray(data.missions) ||
+        data.missions.length > 50) {
+      throw new Error("Invalid D_AI mission response");
+    }
+    return data.missions.map((item) => {
+      if (!item || typeof item.id !== "string" || !projectPattern.test(item.id) ||
+          typeof item.system !== "string" || item.system.length > 128 ||
+          typeof item.status !== "string" || item.status.length > 80 ||
+          typeof item.objective !== "string" || item.objective.length > 12000 ||
+          typeof item.next_action !== "string" || item.next_action.length > 12000 ||
+          !Number.isSafeInteger(item.version) || item.version < 1) {
+        throw new Error("Malformed D_AI mission metadata");
+      }
+      return {
+        id: item.id, system: item.system, objective: item.objective.slice(0, 600),
+        status: item.status, next_action: item.next_action.slice(0, 600),
+        version: item.version,
+      };
+    });
+  };
   const stop = async () => {
     quitting = true;
     if (appRef && quitListener) appRef.off("before-quit", quitListener);
     appRef = null; quitListener = null;
     await drop("disabled");
   };
-  return Object.freeze({ start, status, systems: list, stop });
+  return Object.freeze({ start, status, systems: list, projects, missions, stop });
 }
 
 export const daiDesktopManager = createDaiDesktopManager();
