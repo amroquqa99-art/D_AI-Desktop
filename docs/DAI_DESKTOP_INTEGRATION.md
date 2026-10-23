@@ -198,3 +198,64 @@ No provider entitlement bypass or forged client identity should be added.
 Only a real authenticated request to a documented free model from a packaged
 D_AI Desktop build can close this acceptance gate. No actual sign-in, payment
 or external inference request was made by these automated tests.
+
+
+## M7: Opt-in native V2 D_AI agent/model-router registration (2026-10-23)
+
+The fork now offers a source-level, **opt-in** installation path for
+D_AI Core's native V2 plugin and four required agent definitions inside
+D_AI Desktop's **own** OpenCode CLI profile. Nothing is downloaded or
+copied from the user's original OpenCode account/credentials.
+
+Development setup, with an absolute checkout path:
+
+```sh
+DAI_DESKTOP_CORE_CWD=/absolute/path/to/reviewed/D_AI \
+DAI_DESKTOP_ROUTER_ENABLE=1 \
+bun run --cwd packages/desktop dev
+```
+
+This requires a reviewed D_AI checkout containing Core PR #30's
+`adapters/opencode/router/{index.js,core.js,value.js}`,
+`config/{routing-preferences.json,model-routing-policy.json,model-profiles.json}`
+and the four required agent Markdown definitions. **These parts are not
+yet packaged together with Core PR #29's read-only mission bridge in
+one verified Core revision**; do not claim both work together until
+that integration is explicitly tested.
+
+The installer:
+- registers the local router as a V2 `plugins` directory;
+- registers `dai-os`, `dai/shared/explorer`,
+  `dai/engineer/implementer` and `dai/shared/reviewer`
+  as V2 `agents` from the reviewed Core Markdown definitions;
+- selects `dai-os` only if the owner has no explicit `default_agent`;
+- copies default Auto/free+paid *worker* policies into
+  `userData/cli-profile/dai-router/config` **only if not already present**;
+- retains native `model`, provider credentials, `plugins`, existing
+  agent overrides and all other original fork-profile configuration keys;
+- backs up a preexisting JSON file before modifying it and refuses to
+  rewrite JSONC (or symlinks) automatically;
+- binds D_AI native form requests to the fork's resolved CLI command
+  (including the Bun development command). The Core plugin honors
+  `DAI_ROUTER_DATA_ROOT` and never has to use the original installation's
+  user profile or routing state.
+
+Installation is persisted in the fork profile; remove the plugin/agent
+entries manually in the fork's config to uninstall it. Disabling the
+`DAI_DESKTOP_ROUTER_ENABLE` flag on later starts *does not* uninstall a
+previously installed plugin. Do not place a checkout with untrusted
+executable code in `DAI_DESKTOP_CORE_CWD`.
+
+Core PR #30 now fixes the old source-root resolution (it had resolved
+`adapters/` rather than the Core root) and accepts the active native
+Desktop CLI command through `DAI_OPENCODE_COMMAND_JSON`. A Core test
+checks the isolated data root and nonfallback command execution.
+
+**Remaining gates:** Native V2 plugin activation inside the fork's
+actual running CLI; authenticated Console OAuth and free-model request;
+a parallel third-party subscribed/paid-provider request; real native
+agent creation, task routing, review and UI receipt; combined Core PRs;
+native Windows/Linux/macOS packaging, protection of external plugin
+paths and crash/power-loss recovery. Tests of file registration,
+TypeScript and JS bundles do not establish successful live inference,
+server-side free-tier eligibility or a secure OS process sandbox.
