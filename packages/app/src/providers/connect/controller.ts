@@ -24,15 +24,10 @@ type Polling = {
   attempt?: Authorization
 }
 
-// OpenCode Go and OpenCode Zen both bill through the OpenCode Console, so the
-// Console sign-in is the connection method for both providers.
-export const CONSOLE_INTEGRATION = "opencode"
-
-export const CONSOLE_PROVIDERS = new Set(["opencode", "opencode-go"])
-
-export function consoleIntegration(provider: string) {
-  return CONSOLE_PROVIDERS.has(provider) ? CONSOLE_INTEGRATION : provider
-}
+// Preserve the public re-exports for upstream callers; the pure helper
+// is shared with regression tests without instantiating a SolidJS app.
+export { CONSOLE_INTEGRATION, CONSOLE_PROVIDERS, consoleIntegration } from "./auth-route"
+import { CONSOLE_INTEGRATION } from "./auth-route"
 
 export function providerFormDefaults(fields: ProviderConnectMethod["form"]) {
   return (fields ?? []).reduce<FormAnswer>((answer, field) => {
