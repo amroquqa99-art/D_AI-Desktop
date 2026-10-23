@@ -5,8 +5,12 @@ read-only companion D_AI Core process supervised by Electron main.
 
 ## How to test
 
-The D_AI Core Python bridge is in:
-https://github.com/amroquqa99-art/D_AI/pull/28
+The integrated, read-only D_AI Core mission bridge is in the stacked
+[Core PR #29](https://github.com/amroquqa99-art/D_AI/pull/29), on top of
+the central OS [PR #27](https://github.com/amroquqa99-art/D_AI/pull/27).
+The original bridge prototype remains [PR #28](https://github.com/amroquqa99-art/D_AI/pull/28).
+This Desktop branch pins the integrated Core commit
+`4d84f649b741369c572626bb0ee18e19fa5a7d23` for three-platform smoke tests.
 
 Install that branch in a Python environment, then configure the fork's
 OpenCode Desktop development process with:
@@ -27,10 +31,11 @@ The Electron main process stops its child on app quit.
 
 ## Limitations
 
-There is currently no new renderer UI, no D_AI mission execution RPC, no
-bundled Python runtime, and no packaged Windows/macOS/Linux deliverable.
-The D_AI MemoryStore imports Unix-only fcntl and requires a separate portability
-refactor before claiming full native Windows support.
+The renderer now has a read-only D_AI status/systems/projects/missions panel.
+There is **no mission execution or mutation RPC**, no approval workflow,
+no bundled Python runtime, and no packaged Windows/macOS/Linux deliverable.
+Windows portable memory locks and private ACL tests passed in the Core branch,
+but native app and power-loss acceptance remain open.
 
 GPL-3.0-or-later applies to the combined derivative distribution while the
 original MIT OpenCode attribution remains in LICENSES/OpenCode-MIT.txt.
@@ -93,3 +98,21 @@ This container deliberately has no network access, runs as an unprivileged user
 and has no file-system write access except /tmp. It validates the JavaScript
 bridge lifecycle contract; it is **not** a replacement for testing real
 Electron windows or the Python D_AI Core on all native operating systems.
+
+
+## M5: read-only project and mission UI (experimental)
+
+- The Core `/v1/projects` and `/v1/projects/{project_id}/missions`
+  endpoints are authenticated, loopback-only and restricted to local-installation
+  administrator permissions. They disclose only limited project and mission
+  summaries, not evidence bodies, approvals or keys.
+- Electron main fetches and sanitizes bounded summaries. Typed `DaiDesktopProjects`
+  and `DaiDesktopMissions` IPC expose **only** project IDs, names, mission
+  objectives, statuses, next actions and versions to the renderer.
+- The user selects a project in the native D_AI panel to view its missions.
+  No model can trigger writes through these RPC methods.
+- Cross-platform smoke tests seed a real encrypted mission, then read it
+  through the real Python bridge and assert the evidence body does not leak.
+- Work on mission changes, approvals, receipts, durable scheduler and full
+  agent execution has **not** started at this UI layer. The new interfaces
+  remain a draft until GitHub Actions, source audits and GUI E2E pass.
