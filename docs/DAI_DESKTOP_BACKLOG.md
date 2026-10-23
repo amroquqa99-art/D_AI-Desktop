@@ -13,7 +13,7 @@ Central D_AI OS draft: https://github.com/amroquqa99-art/D_AI/pull/27
 - [x] Separate Electron app identity, protocol, package names and upstream update disable
 - [x] Separate inherited OpenCode CLI XDG roots, database and config paths (source-level)
 - [ ] Full Electron asset build and packaged GUI E2E test
-- [ ] Windows-safe encrypted D_AI Core memory locks, ACLs and crash recovery
+- [ ] Windows-safe encrypted D_AI Core memory locks, ACLs and crash recovery (Core PR #27: lock/DACL + two hard-exit recovery boundaries passed in [run 39878700977](https://github.com/amroquqa99-art/D_AI/actions/runs/39878700977); hostile-account isolation, remaining boundaries and power-loss **not verified**)
 - [x] Experimental read-only D_AI project/mission bridge + typed main-to-renderer RPC (Core PR #29)
 - [ ] D_AI mission schemas reconciled for authenticated writes, approvals and durable task receipts
 - [ ] Safe D_AI Python Core distribution to all three OS targets
