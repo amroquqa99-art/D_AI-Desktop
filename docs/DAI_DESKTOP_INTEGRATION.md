@@ -116,3 +116,32 @@ Electron windows or the Python D_AI Core on all native operating systems.
 - Work on mission changes, approvals, receipts, durable scheduler and full
   agent execution has **not** started at this UI layer. The new interfaces
   remain a draft until GitHub Actions, source audits and GUI E2E pass.
+
+## M5 verification checkpoint — 2026-10-23
+
+GitHub Actions [Desktop smoke run 39878168485](https://github.com/amroquqa99-art/D_AI-Desktop/actions/runs/39878168485)
+passed **all five project-owned jobs** at commit
+`f69dac95f41048ef57a2e0c9e21807c1d28549f5`:
+
+| Job | Observed result |
+| --- | --- |
+| Ubuntu bridge contract + real Python mission handshake | passed (16 JS; 1 real handshake) |
+| Windows bridge contract + real Python mission handshake | passed (16 JS; 1 real handshake) |
+| macOS bridge contract + real Python mission handshake | passed (16 JS; 1 real handshake) |
+| Desktop TypeScript, identity/profile checks and Electron bundling | passed |
+| Docker Compose offline contract suite | passed |
+
+The OS-specific raw job logs were reviewed to ensure the handshake tests actually
+ran and no failed subprocess was masked. The pinned Core tested was
+`4d84f649b741369c572626bb0ee18e19fa5a7d23` (stacked Core PR #29).
+
+**What passed:** JavaScript/client contracts, Python loopback transport,
+encrypted Core mission seed/readback and evidence redaction, TypeScript
+compilation, Electron JS bundle, and offline contract tests.
+
+**What did not pass by virtue of this evidence:** opening a packaged native
+GUI, operating independent installers side-by-side, authentication/deep-link
+round trips, manual GUI accessibility, mission execution, approval receipts,
+model routing, plugin/sandbox behavior, signed updates, power-loss durability,
+or application release quality. Upstream inherited workflows on Blacksmith
+runners can remain queued and are not represented as completed by this run.
