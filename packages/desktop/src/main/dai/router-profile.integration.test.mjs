@@ -35,6 +35,48 @@ test("pinned Core native router installs and imports from fork-owned profile", a
       assert.equal(preferences.global[kind].mode, "auto");
     const manual = await fs.readFile(path.join(configDir, "agent", "dai-os.md"), "utf8");
     assert.ok(manual.length > 100);
+
+    // A real import alone is insufficient: instantiate the Core plugin with
+    // the OpenCode V2 host registration contract (no network/provider request).
+    // This proves the Core router writes to the *fork-owned* runtime directory,
+    // picks up the seeded Auto preferences and registers native tool/command
+    // hooks without ever opening the user's upstream OpenCode installation.
+    const registered = { hooks: [], tools: [], commands: [] };
+    const registration = () => ({ dispose: async () => {} });
+    const ctx = {
+      location: { directory: sandbox },
+      session: { hook: async (name) => {
+        registered.hooks.push("session." + name);
+        return registration();
+      }},
+      tool: {
+        hook: async (name) => {
+          registered.hooks.push("tool." + name);
+          return registration();
+        },
+        transform: async (fn) => {
+          await fn({ add: (tool) => registered.tools.push(tool.name) });
+          return registration();
+        },
+      },
+      command: { transform: async (fn) => {
+        await fn({ add: (command) => registered.commands.push(command.name) });
+        return registration();
+      }},
+    };
+    const dispose = await plugin.default.setup(ctx);
+    assert.ok(registered.tools.includes("dai_route"));
+    assert.ok(registered.tools.includes("dai_routing_status"));
+    assert.ok(registered.commands.includes("dai-models"));
+    assert.ok(registered.hooks.includes("session.prompt"));
+    assert.ok(registered.hooks.includes("session.context"));
+    assert.ok(registered.hooks.includes("tool.execute.before"));
+    assert.equal(typeof dispose, "function");
+    await dispose();
+    const files = await fs.readdir(path.join(root, "runtime", "router", "loaded"));
+    assert.equal(files.length, 1);
+    const loaded = JSON.parse(await fs.readFile(path.join(root, "runtime", "router", "loaded", files[0]), "utf8"));
+    assert.equal(loaded.plugin, "dai.native-router");
   } finally {
     if (oldRoot === undefined) delete process.env.DAI_ROUTER_DATA_ROOT;
     else process.env.DAI_ROUTER_DATA_ROOT = oldRoot;
