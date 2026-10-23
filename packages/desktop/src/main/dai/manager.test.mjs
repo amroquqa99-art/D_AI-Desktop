@@ -81,3 +81,42 @@ test("desktop startup gives cold macOS Python a bounded 45s budget", async () =>
   assert.equal(config.startupTimeoutMs, 45000);
   await m.stop();
 });
+
+
+test("projects and missions are scoped, sanitized and bounded", async () => {
+  const client = {
+    ...valid,
+    projects: async () => ({ projects: [
+      { id: "local-project", name: "Local project", credential: "NEVER_RETURN" },
+    ] }),
+    missions: async (id) => ({ project_id: id, missions: [
+      { id: "mission-01", system: "engineer", objective: "x".repeat(1200),
+        status: "PLANNED", next_action: "inspect", version: 1,
+        raw_evidence: "NEVER_RETURN", approval_secret: "NEVER_RETURN" },
+    ] }),
+  };
+  const manager = createDaiDesktopManager({ launch: async () => ({
+    client, stop: async () => undefined,
+  }) });
+  await manager.start(new EventEmitter(), { python: "python" });
+  assert.deepEqual(await manager.projects(), [{ id: "local-project", name: "Local project" }]);
+  const missions = await manager.missions("local-project");
+  assert.equal(missions.length, 1);
+  assert.equal(missions[0].objective.length, 600);
+  assert.deepEqual(Object.keys(missions[0]), ["id", "system", "objective", "status",
+    "next_action", "version"]);
+  assert.ok(!JSON.stringify(missions).includes("NEVER_RETURN"));
+  await assert.rejects(manager.missions("../escape"), /identifier/);
+  await manager.stop();
+  await assert.rejects(manager.projects(), /not connected/);
+});
+
+test("rejects a project id mismatch in Core responses", async () => {
+  const manager = createDaiDesktopManager({ launch: async () => ({
+    client: { ...valid, missions: async () => ({ project_id: "other", missions: [] }) },
+    stop: async () => undefined,
+  }) });
+  await manager.start(new EventEmitter(), { python: "python" });
+  await assert.rejects(manager.missions("expected"), /Invalid D_AI mission response/);
+  await manager.stop();
+});
