@@ -64,13 +64,14 @@ You are the D_AI OS entry point. For substantive tasks load the `dai-core` skill
 export default {{
   id: "dai.desktop.mcp",
   async setup(ctx) {{
-    return ctx.mcp.transform((editor) => {{
+    const registration = await ctx.mcp.transform((editor) => {{
       if (editor.get("dai")) return; // Owner config wins.
       editor.set("dai", {{
         type: "local", command: [{executable}, "-m", "dai.mcp_server"],
         environment: {{ DAI_PROJECT_ROOT: {root} }}
       }});
     }});
+    return () => registration.dispose();
   }}
 }};
 '''
