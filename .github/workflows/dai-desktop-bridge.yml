@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: amroquqa99-art/D_AI
-          ref: 740a190d03be343e710c778d28aeb8fa364f99d7
+          ref: a4837c9c9f91094cf67529f60a1cc54279da3070
           path: dai-core
       - uses: actions/setup-node@v4
         with:
@@ -56,6 +56,10 @@ jobs:
           DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-core
           DAI_TEST_PYTHON: python
         run: node --test packages/desktop/src/main/dai/bridge.smoke.test.mjs
+      - name: Real pinned D_AI native V2 router and Auto preference integration
+        env:
+          DAI_TEST_CORE_DIR: ${{ github.workspace }}/dai-core
+        run: node --test packages/desktop/src/main/dai/router-profile.integration.test.mjs
 
   desktop-typecheck:
     name: Desktop TypeScript compatibility
