@@ -38,6 +38,11 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
   const cli = yield* desktopCli.resolve
   const version = mode === "initial" ? cli.version : undefined
 
+  // The D_AI native plugin must make form API calls through this fork's SAME
+  // OpenCode CLI/service identity, not another installed OpenCode binary.
+  if (process.env.DAI_DESKTOP_ROUTER_ENABLE === "1" && process.env.DAI_ROUTER_DATA_ROOT)
+    process.env.DAI_OPENCODE_COMMAND_JSON = JSON.stringify(cli.command)
+
   if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
   const client = yield* Effect.promise(() => import("@opencode/client/service"))
 
