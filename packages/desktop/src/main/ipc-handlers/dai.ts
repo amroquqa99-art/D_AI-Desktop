@@ -8,6 +8,8 @@ export const daiHandlers = DaiRpcs.toLayer(
     DaiRpcs.of({
       DaiDesktopStatus: () => Effect.promise(() => daiDesktopManager.status()),
       DaiDesktopSystems: () => Effect.sync(() => daiDesktopManager.systems()),
+      DaiDesktopProjects: () => Effect.promise(() => daiDesktopManager.projects()),
+      DaiDesktopMissions: ({ projectId }) => Effect.promise(() => daiDesktopManager.missions(projectId)),
     }),
   ),
 )
