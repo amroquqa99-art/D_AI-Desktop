@@ -6,7 +6,6 @@ import path from "node:path"
 import { app } from "electron"
 import { APP_ID, APP_NAME } from "../constants"
 import { forkCliEnvironment, useForkProfile } from "./profile"
-import { daiRouterStateRoot, installDaiRouterProfile } from "./dai-router-profile"
 
 const testOnboarding = process.env.OPENCODE_TEST_ONBOARDING === "1"
 
@@ -39,19 +38,10 @@ export function configureApplication() {
   if (useForkProfile()) {
     const userData = app.getPath("userData")
     Object.assign(process.env, forkCliEnvironment(userData))
-    // A plugin installed into this fork always receives a private router state
-    // root, even on subsequent launches without the opt-in installation flag.
-    process.env.DAI_ROUTER_DATA_ROOT = daiRouterStateRoot(userData)
-    if (process.env.DAI_DESKTOP_ROUTER_ENABLE === "1") {
-      try {
-        const installed = installDaiRouterProfile(userData, process.env.DAI_DESKTOP_CORE_CWD ?? "")
-        console.info("[D_AI Desktop] native router profile:", installed.changed ? "installed" : "already installed")
-      } catch (error) {
-        // The normal OpenCode application must remain usable if optional Core
-        // provisioning fails; no implicit fallback to the user's OpenCode profile.
-        console.warn("[D_AI Desktop] native router was not installed:", error)
-      }
-    }
+    // Match the single async, opt-in installer in main/dai/router-profile.mjs.
+    // Persisted plugin installations must reuse the SAME independent state
+    // even when the one-time installation flag is unset on later launches.
+    process.env.DAI_ROUTER_DATA_ROOT = path.join(userData, "cli-profile", "dai-router-data")
   }
 
   if (testRoot) {
