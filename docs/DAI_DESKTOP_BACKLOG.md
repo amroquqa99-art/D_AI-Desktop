@@ -29,7 +29,9 @@ Central D_AI OS draft: https://github.com/amroquqa99-art/D_AI/pull/27
 - [ ] Durable recurring routines and offline-first checkpoint/resume
 - [ ] Sandbox provider support and Docker Compose-based test environments
 - [ ] Skill provenance registry with automated security scanning
-- [ ] Configurable model router with transparent cost and context preservation
+- [x] D_AI Core free-only candidate selection guard (Core PR #29, 5 passing regression tests; **does not invoke or bill**)
+- [ ] Configurable *live* model router with OpenCode catalog reconciliation, free-tier eligibility checks, transparent cost/usage and context preservation
+- [ ] Free-model E2E with user-authorized OpenCode Console account in a packaged D_AI Desktop; respect free-tier client restrictions
 
 ## P2 — broader rollout
 
