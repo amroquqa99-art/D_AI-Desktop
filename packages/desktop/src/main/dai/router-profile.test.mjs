@@ -12,6 +12,13 @@ async function fixture(fn) {
   const adapter = path.join(core, "adapters", "opencode");
   const config = path.join(base, "dai-app", "cli-profile", "config", "opencode");
   await fs.mkdir(path.join(adapter, "router"), { recursive: true });
+  await fs.mkdir(path.join(core, "config"), { recursive: true });
+  for (const name of ["routing-preferences.json", "model-profiles.json", "model-routing-policy.json"])
+    await fs.writeFile(path.join(core, "config", name),
+      JSON.stringify(name === "routing-preferences.json"
+        ? { schema_version: 1, global: { retrieval: { mode: "auto" },
+            implementation: { mode: "auto" }, review: { mode: "auto" } }, projects: {} }
+        : { schema_version: 1 }) + "\\n");
   for (const name of ["agent", "skill", "command"]) {
     await fs.mkdir(path.join(adapter, name), { recursive: true });
     await fs.writeFile(path.join(adapter, name, "dummy.md"), "D_AI fixture");
@@ -42,6 +49,13 @@ test("fresh fork profile stages all OS definitions and router without forcing a 
     assert.deepEqual(json.plugins, [path.join(core, "adapters", "opencode", "router")]);
     assert.equal(json.default_agent, "dai-os");
     assert.equal(json.model, undefined);
+    const dataRoot = path.join(base, "dai-app", "cli-profile", "dai-router-data");
+    const policy = JSON.parse(await fs.readFile(
+      path.join(dataRoot, "config", "routing-preferences.json"), "utf8"));
+    assert.equal(policy.global.retrieval.mode, "auto");
+    assert.equal(policy.global.implementation.mode, "auto");
+    assert.equal(policy.global.review.mode, "auto");
+    assert.equal(process.env.DAI_ROUTER_DATA_ROOT, dataRoot);
     for (const name of ["agent", "skill", "command"])
       assert.equal(await fs.readFile(path.join(config, name, "dummy.md"), "utf8"), "D_AI fixture");
     assert.equal(await fs.readFile(path.join(mainOpenCode, "auth.json"), "utf8"), "do not touch");
