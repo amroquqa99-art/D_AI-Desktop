@@ -65,5 +65,15 @@ Linux/Windows/macOS Python handshake and Docker offline checks against a
 pinned Core revision. Those tests do not authorize a chargeable live-model
 call, or prove provider acceptance of this fork.
 
+Verified Desktop contract CI:
+
+- [Run 39937986597](https://github.com/amroquqa99-art/D_AI-Desktop/actions/runs/39937986597) passed all five project-owned jobs.
+- Raw Ubuntu, Windows and macOS logs each show **16/16 JavaScript
+  contracts passed** and **1/1 actual Python Core mission handshake passed**.
+- Desktop TypeScript and Electron bundle, and Docker Compose offline
+  contract checks passed.
+- This run used pinned Core `740a190d03be343e710c778d28aeb8fa364f99d7`
+  which includes the free-only routing guard.
+
 An end-to-end user-approved free-model API call in a real packaged
 D_AI Desktop binary remains an **unverified acceptance gate**.
