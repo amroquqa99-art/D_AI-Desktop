@@ -154,11 +154,13 @@ restrict free-tier access to the original OpenCode clients; availability in
 this separately branded fork is **not guaranteed**. No attempt to spoof
 the official client or bypass provider-side eligibility is permitted.
 
-D_AI Core [PR #29](https://github.com/amroquqa99-art/D_AI/pull/29)
-now adds free-only **recommendation routing**, default-on for its native
-MCP tool. It rejects unknown, unverified or nonzero input/output-cost
-models rather than spending automatically. This does not change manual
-OpenCode chat model choice, and D_AI mission execution is not wired.
+D_AI Core [PR #30](https://github.com/amroquqa99-art/D_AI/pull/30)
+introduces native **Auto value routing** across eligible connected free
+*and paid* worker models, with exact Manual pins. It uses known provider
+pricing and task-specific verified benchmark metadata when supplied;
+otherwise it explicitly labels the fallback cost-only. This does not
+change manual OpenCode chat model choice, and D_AI mission execution is
+not yet wired end-to-end.
 See `docs/OPEN_CODE_FREE_MODELS.md` for connection steps, restrictions
 and live-provider verification gates.
 
