@@ -46,7 +46,7 @@ test("fresh fork profile stages all OS definitions and router without forcing a 
     const result = await installDaiRouterProfile({ enabled: true, coreDir: core, configDir: config });
     assert.equal(result.state, "installed");
     const json = JSON.parse(await fs.readFile(path.join(config, "opencode.jsonc"), "utf8"));
-    assert.deepEqual(json.plugins, [path.join(core, "adapters", "opencode", "router")]);
+    assert.deepEqual(json.plugins, [path.join(await fs.realpath(core), "adapters", "opencode", "router")]);
     assert.equal(json.default_agent, "dai-os");
     assert.equal(json.model, undefined);
     const dataRoot = path.join(base, "dai-app", "cli-profile", "dai-router-data");
