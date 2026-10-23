@@ -16,8 +16,8 @@ Central D_AI OS draft: https://github.com/amroquqa99-art/D_AI/pull/27
 - [ ] Windows-safe encrypted D_AI Core memory locks, ACLs and crash recovery (Core PR #27: lock/DACL + two hard-exit recovery boundaries passed in [run 39878700977](https://github.com/amroquqa99-art/D_AI/actions/runs/39878700977); hostile-account isolation, remaining boundaries and power-loss **not verified**)
 - [x] Experimental read-only D_AI project/mission bridge + typed main-to-renderer RPC (Core PR #29)
 - [ ] D_AI mission schemas reconciled for authenticated writes, approvals and durable task receipts
-- [ ] Wire the D_AI native OpenCode router into the fork's isolated CLI profile, with explicit provider sign-in and preserved original manual model selector
-- [ ] Benchmark and verify free/paid Auto value-routing on real native OpenCode catalog/provider sessions (Core PR #27 includes prototype selection logic, not yet a Desktop end-to-end test)
+- [x] Add opt-in source-level installation of the D_AI native V2 router, D_AI OS and three bounded workers into the fork's isolated CLI profile; preserve manual model picker and provider connections. **Live plugin activation/worker execution still unverified**, so this does not close the E2E routing gate.
+- [ ] Verify native plugin activation, real worker creation and free/paid Auto value-routing on authenticated OpenCode sessions (Core PR #27 includes prototype selection logic, not yet a Desktop end-to-end test)
 - [ ] Safe D_AI Python Core distribution to all three OS targets
 - [ ] Restore authentication/deep-link compatibility with independent URI scheme
 - [ ] Inspect upstream OpenCode icons and replace brand-specific artwork
