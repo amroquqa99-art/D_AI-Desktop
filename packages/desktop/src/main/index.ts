@@ -7,7 +7,6 @@ import { registerStorageSnapshotHandler } from "./storage/snapshot"
 import { createEarlyWindow } from "./windows/early"
 import { rendererAssetsServed } from "./windows/protocol"
 import { registerRendererScheme } from "./windows/scheme"
-import { useForkProfile } from "./lifecycle/profile"
 
 // This module stays small on purpose. Electron holds the ready event until the entry module has
 // finished, and the first window should be on screen before the rest of the main process — a few
@@ -24,17 +23,7 @@ if (acquireApplicationLock()) {
     registerStorageSnapshotHandler()
     createEarlyWindow()
     marks.window = Date.now()
-    // Developer-authorized D_AI checkout only; never change an existing profile.
-    // Complete this before probing or starting the bundled OpenCode service.
-    if (useForkProfile() && process.env.DAI_DESKTOP_ROUTER_ENABLE === "1") {
-      try {
-        const { installDaiRouterProfile } = await import("./dai/router-profile.mjs")
-        const installed = await installDaiRouterProfile()
-        console.info("[D_AI Desktop] native router profile:", installed.state, installed.detail ?? installed.reason ?? "")
-      } catch (error) {
-        console.warn("[D_AI Desktop] native router profile unavailable:", String(error))
-      }
-    }
+    // Native D_AI profile is provisioned once in configureApplication, before service discovery.
     startSidecarProbe()
 
     // The window's renderer is already loading. Its HTML and preloaded chunks are served from this
