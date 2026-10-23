@@ -14,7 +14,8 @@ Central D_AI OS draft: https://github.com/amroquqa99-art/D_AI/pull/27
 - [x] Separate inherited OpenCode CLI XDG roots, database and config paths (source-level)
 - [ ] Full Electron asset build and packaged GUI E2E test
 - [ ] Windows-safe encrypted D_AI Core memory locks, ACLs and crash recovery
-- [ ] D_AI mission schemas reconciled with PR #27 and durable task receipts
+- [x] Experimental read-only D_AI project/mission bridge + typed main-to-renderer RPC (Core PR #29)
+- [ ] D_AI mission schemas reconciled for authenticated writes, approvals and durable task receipts
 - [ ] Safe D_AI Python Core distribution to all three OS targets
 - [ ] Restore authentication/deep-link compatibility with independent URI scheme
 - [ ] Inspect upstream OpenCode icons and replace brand-specific artwork
