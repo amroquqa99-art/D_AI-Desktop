@@ -450,21 +450,21 @@ describe("SubagentTool", () => {
                 type: "tool-call",
                 id,
                 name: SubagentTool.name,
-                input: { agent: "reviewer", description: id, prompt: id, sessionID },
+                input: { agent: "reviewer", description: id, prompt: id, ...(sessionID === undefined ? {} : { sessionID }) },
               },
             })
           const first = yield* call(root.id, toolIdentity.agent, "depth-one")
-          expect(first.status).toBe("completed")
+          expect(first).toMatchObject({ status: "completed" })
           const one = outputSessionID(first.metadata)
           yield* setDelegation("deny")
           expect((yield* call(one, reviewer, "denied-child")).status).toBe("error")
           expect((yield* sessions.list({ parentID: one })).data).toHaveLength(0)
           yield* setDelegation("allow")
           const second = yield* call(one, reviewer, "depth-two")
-          expect(second.status).toBe("completed")
+          expect(second).toMatchObject({ status: "completed" })
           const two = outputSessionID(second.metadata)
           const third = yield* call(two, reviewer, "depth-three")
-          expect(third.status).toBe("completed")
+          expect(third).toMatchObject({ status: "completed" })
           const three = outputSessionID(third.metadata)
           expect((yield* sessions.get(one)).parentID).toBe(root.id)
           expect((yield* sessions.get(two)).parentID).toBe(one)
@@ -479,7 +479,7 @@ describe("SubagentTool", () => {
             error: { message: expect.stringContaining("is not a child of the current session") },
           })
           const resumed = yield* call(two, reviewer, "continue-depth-three", three)
-          expect(resumed.status).toBe("completed")
+          expect(resumed).toMatchObject({ status: "completed" })
           expect(outputSessionID(resumed.metadata)).toBe(three)
           expect((yield* sessions.list({ parentID: two })).data).toHaveLength(1)
         }),
