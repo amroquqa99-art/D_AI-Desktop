@@ -26,7 +26,7 @@ jobs:
             package: cli
             test: test/updater-install.test.ts
           - pr: 66464
-            ref: 1fd2befd928cb110b7c0f8f38e3998df4381e82e
+            ref: b4be13e10050f1b37064bd4e818f16bed63fd6b3
             package: util
             test: src/session-turn.test.ts
     steps:
