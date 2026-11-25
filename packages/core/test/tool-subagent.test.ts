@@ -43,6 +43,7 @@ import { offlineModels } from "./fixture/models"
 import { testEffect } from "./lib/effect"
 import { executeTool, registerToolPlugin, toolIdentity } from "./lib/tool"
 import { makeRosterProbe, memberName } from "./lib/team-roster-probe"
+import { bindMember, installRoster, listMembers, openRosterDatabase } from "./lib/team-roster-sql-probe"
 
 const childText = "child final response"
 const childModel = Model.Ref.make({ id: Model.ID.make("child"), providerID: Provider.ID.make("test") })
@@ -222,6 +223,135 @@ const withSubagent = (location: Location.Ref) =>
       }),
     ).pipe(Effect.provide(locations.get(location)))
   })
+
+const fileIt = testEffect(tempGlobalLayer)
+
+describe("SQLite roster feasibility", () => {
+  fileIt.live("enforces unique bindings across processes and reloads native sessions from disk", () =>
+    Effect.gen(function* () {
+      const dir = yield* tmpdirScoped()
+      const otherDir = yield* tmpdirScoped()
+      const data = path.join(dir.path, "data")
+      yield* Effect.promise(() => Bun.write(path.join(dir.path, "seed"), ""))
+      const filename = path.join(dir.path, "team-test.sqlite")
+      const global = Global.layerWith({
+        data,
+        cache: path.join(dir.path, "cache"),
+        config: path.join(dir.path, "config"),
+        state: path.join(dir.path, "state"),
+        tmp: path.join(dir.path, "tmp"),
+        bin: path.join(dir.path, "cache", "bin"),
+        log: path.join(data, "log"),
+        repos: path.join(data, "repos"),
+      })
+      const server = () =>
+        AppNodeBuilder.build(nodes, [
+          SessionExecution.node.replace(executionNode),
+          Global.node.replace(global),
+          Database.node.replace(Database.configured({ path: filename })),
+          offlineModels,
+          PluginSupervisor.node.replace(subagentPluginSupervisor),
+        ])
+      const ids = yield* Effect.scoped(
+        Effect.gen(function* () {
+          const context = yield* Layer.build(server())
+          const sessions = Context.get(context, Session.Service)
+          const root = yield* sessions.create({
+            location: Location.Ref.make({ directory: AbsolutePath.make(dir.path) }),
+            model: parentModel,
+          })
+          const other = yield* sessions.create({
+            location: Location.Ref.make({ directory: AbsolutePath.make(otherDir.path) }),
+          })
+          const children = yield* Effect.forEach([0, 1, 2, 3], (i) =>
+            sessions.create({ parentID: root.id, title: "candidate-" + i, agent: Agent.ID.make("reviewer") }),
+          )
+          const unrelated = yield* sessions.create({ parentID: other.id })
+          const nested = yield* sessions.create({ parentID: children[0]!.id })
+          return { root: root.id, other: other.id, children: children.map((child) => child.id), unrelated: unrelated.id, nested: nested.id }
+        }),
+      )
+      // Native connection is closed. Use real independent processes over the same migrated database.
+      const setup = openRosterDatabase(filename)
+      try {
+        installRoster(setup)
+        expect(bindMember(setup, ids.root, ids.unrelated, "unrelated")).toBe(0)
+        expect(bindMember(setup, ids.root, ids.nested, "nested")).toBe(0)
+        expect(bindMember(setup, ids.root, ids.root, "root")).toBe(0)
+        expect(() => bindMember(setup, ids.root, ids.children[0]!, "../escape")).toThrow()
+      } finally {
+        setup.close()
+      }
+
+      const winners = yield* Effect.promise(async () => {
+        const worker = path.join(import.meta.dir, "fixture/team-roster-worker.ts")
+        return Promise.all(
+          ids.children.map(async (id) => {
+            const child = Bun.spawn([process.execPath, worker, filename, ids.root, id, "reviewer"], {
+              stdout: "pipe",
+              stderr: "pipe",
+            })
+            const [code, stdout, stderr] = await Promise.all([
+              child.exited,
+              new Response(child.stdout).text(),
+              new Response(child.stderr).text(),
+            ])
+            expect(code, stderr).toBe(0)
+            return Number(stdout.trim())
+          }),
+        )
+      })
+      expect(winners.toSorted()).toEqual([0, 0, 0, 1])
+
+      const check = openRosterDatabase(filename)
+      let winner: string
+      try {
+        const members = listMembers(check, ids.root)
+        expect(members).toHaveLength(1)
+        winner = members[0]!.memberID
+        expect(ids.children).toContain(Session.ID.make(winner))
+        expect(listMembers(check, ids.other)).toEqual([])
+        expect(bindMember(check, ids.root, winner, "another-name")).toBe(0)
+      } finally {
+        check.close()
+      }
+
+      // Start a new native service and database connection, not the old service or in-memory cache.
+      yield* Effect.scoped(
+        Effect.gen(function* () {
+          const context = yield* Layer.build(server())
+          const sessions = Context.get(context, Session.Service)
+          const memberID = Session.ID.make(winner)
+          expect((yield* sessions.get(memberID)).parentID).toBe(ids.root)
+          expect(yield* sessions.messages({ sessionID: memberID })).toEqual([])
+          expect((yield* sessions.active).has(memberID)).toBe(false)
+          yield* sessions.archive(memberID)
+        }),
+      )
+      const reopened = openRosterDatabase(filename)
+      try {
+        expect(listMembers(reopened, ids.root)).toEqual([])
+        expect(bindMember(reopened, ids.root, ids.children.find((id) => id !== winner)!, "reviewer")).toBe(0)
+      } finally {
+        reopened.close()
+      }
+      yield* Effect.scoped(
+        Effect.gen(function* () {
+          const context = yield* Layer.build(server())
+          const sessions = Context.get(context, Session.Service)
+          yield* sessions.unarchive(Session.ID.make(winner))
+        }),
+      )
+      const restored = openRosterDatabase(filename)
+      try {
+        expect(listMembers(restored, ids.root)).toEqual([{ name: "reviewer", memberID: winner }])
+      } finally {
+        restored.close()
+      }
+    }),
+    30_000,
+  )
+})
 
 describe("Retained roster feasibility", () => {
   it.live("persists named members without execution and excludes inherited annotations", () =>
