@@ -72,3 +72,14 @@ Each PR targets dev, is independently reviewable and has its own acceptance chec
 - Which existing UI surface should own retained-member discovery?
 
 The first question is a gate, not a claim that the closed Agent Teams proposal is now accepted.
+
+
+## Storage review: V2 constraints (follow-up)
+Inspected packages/schema/src/session.ts, session-metadata.ts and packages/core/src/session/sql.ts, store.ts at the pinned baseline.
+- Session.Info already has projectID, parentID, metadata, time.archived, model and agent. SessionTable persists metadata as JSON and indexes project and parent.
+- **Metadata inheritance is a trap:** ordinary children and forks inherit their parent's current metadata unless explicitly overridden (SessionMetadata contract). A boolean or name in metadata alone could silently turn descendants/forks into team members. Any metadata-based prototype must bind membership to the exact child ID and owning root/project, validate that binding on every roster read, and define what a fork inherits. Generic host-supplied metadata is not an authorization credential.
+- The existing title is not a durable unique roster identity. Keep the member ID stable and avoid interpreting an arbitrary title as membership.
+- Compare a dedicated typed membership relation with atomic uniqueness against a reserved metadata field before selecting storage. A relation adds migration/API scope but supports database-enforced uniqueness; a metadata field avoids a new table but must handle inheritance, atomic name reservation and trusted mutation. No choice committed before maintainer guidance.
+- SessionStore.list supports parent, project and archived filtering. Use its native indexed lookups and explicit scope rather than scanning every project or polling all agents.
+- Existing busy/idle timestamps and job state are runtime facts; avoid introducing a second independent state machine for status.
+Add acceptance scenarios: normal child/fork of a retained member is not implicitly retained; generic metadata mutation cannot grant cross-root membership; archived/forked member behavior is explicit; metadata and session state are consistent under concurrent creation. 
