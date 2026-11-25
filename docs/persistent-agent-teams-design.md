@@ -83,3 +83,13 @@ Inspected packages/schema/src/session.ts, session-metadata.ts and packages/core/
 - SessionStore.list supports parent, project and archived filtering. Use its native indexed lookups and explicit scope rather than scanning every project or polling all agents.
 - Existing busy/idle timestamps and job state are runtime facts; avoid introducing a second independent state machine for status.
 Add acceptance scenarios: normal child/fork of a retained member is not implicitly retained; generic metadata mutation cannot grant cross-root membership; archived/forked member behavior is explicit; metadata and session state are consistent under concurrent creation. 
+
+
+## Feasibility evidence (2026-11-26)
+- Tested source: ed740966f7a2f851a35cf301f2f7e50f426d60d6, branch agent-team-probe (test-only changes on the pinned V2 baseline).
+- CI: https://github.com/amroquqa99-art/D_AI-Desktop/actions/runs/45720869892/job/139578556390
+- Bun 1.4.4, frozen lockfile, Node 24, ubuntu-24.04. Actual native core tool-subagent test suite: 15 pass, 0 fail, 92 expect calls; core typecheck:tsc passed.
+- Initial run 45720383005 had 14 pass, 1 fail in the added test. The test supplied an absent sessionID as explicit undefined; revised test omits that key and asserts the full success result. No runtime change was required. The initial log did not capture the underlying validation error, so this is a fixture correction, not a proven upstream bug.
+- Added characterization checks: configured depth 3, deny permission prevents a new child, explicit allow permits the next generation, depth 4 refused, root cannot continue its grandchild, direct parent can continue the same depth-3 child, no duplicate child created. The original suite also covers background completion, continuation, steering, replay and cancellation in its existing fixtures.
+- Scope: simulated execution/fixtures on Linux; no live provider, no new team roster, no cross-restart roster persistence, no team UI, no full repository CI. This supports feasibility, not acceptance of A01–A16 for an unimplemented feature.
+- Design review: no maintainer response as of this check. Do not open implementation PR before approval.
