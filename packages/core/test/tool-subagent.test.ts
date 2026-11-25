@@ -42,6 +42,7 @@ import { tempGlobalLayer } from "./fixture/global"
 import { offlineModels } from "./fixture/models"
 import { testEffect } from "./lib/effect"
 import { executeTool, registerToolPlugin, toolIdentity } from "./lib/tool"
+import { makeRosterProbe, memberName } from "./lib/team-roster-probe"
 
 const childText = "child final response"
 const childModel = Model.Ref.make({ id: Model.ID.make("child"), providerID: Provider.ID.make("test") })
@@ -221,6 +222,100 @@ const withSubagent = (location: Location.Ref) =>
       }),
     ).pipe(Effect.provide(locations.get(location)))
   })
+
+describe("Retained roster feasibility", () => {
+  it.live("persists named members without execution and excludes inherited annotations", () =>
+    Effect.gen(function* () {
+      const dir = yield* tmpdirScoped()
+      const otherDir = yield* tmpdirScoped()
+      const sessions = yield* Session.Service
+      const store = yield* SessionStore.Service
+      const location = Location.Ref.make({ directory: AbsolutePath.make(dir.path) })
+      const root = yield* sessions.create({ location, model: parentModel, metadata: { host: "preserved" } })
+      const other = yield* sessions.create({ location })
+      const external = yield* sessions.create({
+        location: Location.Ref.make({ directory: AbsolutePath.make(otherDir.path) }),
+      })
+      const roster = yield* makeRosterProbe(sessions, store)
+      const input = { rootID: root.id, name: "reviewer", agent: Agent.ID.make("reviewer") }
+      const results = yield* Effect.all(
+        [roster.create(input).pipe(Effect.exit), roster.create(input).pipe(Effect.exit)],
+        { concurrency: "unbounded" },
+      )
+      expect(results.filter(Exit.isSuccess)).toHaveLength(1)
+      expect(results.filter(Exit.isFailure)).toHaveLength(1)
+      const before = yield* roster.list(root.id)
+      expect(before).toHaveLength(1)
+      const member = before[0]!.session
+      expect(member.metadata?.host).toBe("preserved")
+      expect(member.parentID).toBe(root.id)
+      const ordinary = yield* sessions.create({ parentID: root.id, title: "reviewer" })
+      const nested = yield* sessions.create({ parentID: member.id })
+      const copy = yield* sessions.create({ parentID: root.id, metadata: member.metadata })
+      expect(nested.metadata).toEqual(member.metadata)
+      expect(copy.metadata).toEqual(member.metadata)
+      expect(memberName(root, ordinary)).toBeUndefined()
+      expect(memberName(root, nested)).toBeUndefined()
+      expect(memberName(root, copy)).toBeUndefined()
+      expect(yield* roster.list(other.id)).toEqual([])
+      expect(yield* roster.list(external.id)).toEqual([])
+      expect(Exit.isFailure(yield* roster.create({ ...input, rootID: member.id }).pipe(Effect.exit))).toBe(true)
+      expect(Exit.isFailure(yield* roster.create({ ...input, name: "../escape" }).pipe(Effect.exit))).toBe(true)
+      // A new coordinator has no cached member state.
+      const reopened = yield* makeRosterProbe(sessions, store)
+      expect((yield* reopened.list(root.id)).map((entry) => entry.session.id)).toEqual([member.id])
+      expect(yield* sessions.inbox(member.id)).toEqual([])
+      expect(yield* sessions.messages({ sessionID: member.id })).toEqual([])
+      expect((yield* sessions.active).has(member.id)).toBe(false)
+      expect(yield* Job.Service.use((jobs) => jobs.get(member.id))).toBeUndefined()
+      yield* sessions.archive(member.id)
+      expect(yield* reopened.list(root.id)).toEqual([])
+      expect((yield* sessions.get(member.id)).id).toBe(member.id)
+      expect(Exit.isFailure(yield* reopened.create(input).pipe(Effect.exit))).toBe(true)
+      yield* sessions.unarchive(member.id)
+      expect((yield* reopened.list(root.id)).map((entry) => entry.session.id)).toEqual([member.id])
+    }),
+  )
+
+  completionIt.live("uses the same retained child for repeated native tool rounds and excludes forks", () =>
+    Effect.gen(function* () {
+      const dir = yield* tmpdirScoped()
+      const location = Location.Ref.make({ directory: AbsolutePath.make(dir.path) })
+      const sessions = yield* Session.Service
+      const store = yield* SessionStore.Service
+      const parent = yield* sessions.create({ location, model: parentModel })
+      yield* withSubagent(parent.location)
+      const locations = yield* LocationServiceMap.Service
+      const registry = yield* Tool.Service.pipe(Effect.provide(locations.get(parent.location)))
+      const roster = yield* makeRosterProbe(sessions, store)
+      const child = yield* roster.create({ rootID: parent.id, name: "reviewer", agent: Agent.ID.make("reviewer") })
+      const call = (id: string) =>
+        executeTool(registry, {
+          sessionID: parent.id,
+          ...toolIdentity,
+          call: {
+            type: "tool-call",
+            id,
+            name: SubagentTool.name,
+            input: { agent: "reviewer", description: "review", prompt: id, sessionID: child.id },
+          },
+        })
+      for (const id of ["first-review", "second-review"]) {
+        const result = yield* call(id)
+        expect(result).toMatchObject({ status: "completed", metadata: { sessionID: child.id } })
+        yield* sessions.wait(child.id)
+        yield* sessions.wait(parent.id)
+        expect((yield* roster.list(parent.id)).map((entry) => entry.session.id)).toEqual([child.id])
+      }
+      const history = yield* sessions.context(child.id)
+      expect(history.filter((message) => message.type === "user")).toHaveLength(2)
+      expect(history.filter((message) => message.type === "assistant")).toHaveLength(2)
+      const forked = yield* sessions.fork({ sessionID: child.id })
+      expect(memberName(parent, forked)).toBeUndefined()
+      expect((yield* roster.list(parent.id)).map((entry) => entry.session.id)).toEqual([child.id])
+    }),
+  )
+})
 
 describe("SubagentTool", () => {
   completionIt.live("admits one durable completion across live delivery and restart replay", () =>
