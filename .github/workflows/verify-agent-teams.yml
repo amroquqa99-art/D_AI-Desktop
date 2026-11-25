@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          ref: 790e4281a989006ddbc9f82420d91eae69937ba2
+          ref: ed740966f7a2f851a35cf301f2f7e50f426d60d6
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -28,5 +28,6 @@ jobs:
         env:
           GITHUB_ACTIONS: "false"
         run: bun run test test/tool-subagent.test.ts
-      - working-directory: packages/core
+      - if: ${{ !cancelled() }}
+        working-directory: packages/core
         run: bun run typecheck:tsc
