@@ -93,3 +93,20 @@ Add acceptance scenarios: normal child/fork of a retained member is not implicit
 - Added characterization checks: configured depth 3, deny permission prevents a new child, explicit allow permits the next generation, depth 4 refused, root cannot continue its grandchild, direct parent can continue the same depth-3 child, no duplicate child created. The original suite also covers background completion, continuation, steering, replay and cancellation in its existing fixtures.
 - Scope: simulated execution/fixtures on Linux; no live provider, no new team roster, no cross-restart roster persistence, no team UI, no full repository CI. This supports feasibility, not acceptance of A01–A16 for an unimplemented feature.
 - Design review: no maintainer response as of this check. Do not open implementation PR before approval.
+
+
+## Executable roster prototype (fork only)
+Source: https://github.com/amroquqa99-art/D_AI-Desktop/blob/2962bd324e811fb36e6c4e1d2b9c09c7b02e03bb/packages/core/test/lib/team-roster-probe.ts
+Integration tests: https://github.com/amroquqa99-art/D_AI-Desktop/commit/2962bd324e811fb36e6c4e1d2b9c09c7b02e03bb
+CI: https://github.com/amroquqa99-art/D_AI-Desktop/actions/runs/45722970339
+
+The test-only coordinator uses Session.create and SessionStore.list, not a second execution engine. It preserves host metadata, binds the marker to the exact child/root identity, filters by parent and project, excludes forks and archived members, and serializes name reservation with an Effect semaphore. A newly constructed coordinator reads existing session rows, not an in-memory roster. Native SubagentTool continuation runs two rounds in the same child; its existing job notification path stays intact. Tests cover duplicate-name requests, unrelated roots, copied/inherited metadata, invalid names, archive/unarchive, inactive empty sessions, and real fork behavior.
+
+### Deliberate limitations and decision gate
+- The probe's marker is host-writable metadata, not a trusted authorization record. Explicitly forging a matching marker is outside the demonstrated guarantees. A production design must authorize roster mutations at the service boundary.
+- A semaphore prevents duplicate creation only within a single coordinator instance. Separate processes or instances could race. Do not claim database-level atomic name uniqueness; use a typed relation with a unique (root, name) constraint if cross-process creation must be supported, or have maintainers confirm the single-writer contract and its failure/recovery rules.
+- A new coordinator reading the same database is not a process-restart test. Test a fresh service/database connection and interrupted job recovery separately.
+- The prototype limits names to lower-case ASCII slugs (1–48 chars) solely for deterministic feasibility testing. Display labels and Unicode policy remain open.
+- The prototype creates an idle session directly; agent validation, authorization and production model selection need to reuse the existing native admission path. It is not a new public endpoint or registered tool.
+- Archive in the probe only affects roster visibility. Production must define busy-member archive/cancel behavior and whether archived names remain reserved. No automatic background execution on listing or creation is introduced.
+- No upstream PR or production integration has been made. The test-only prototype is disposable if the maintainers prefer a different persistence strategy.
