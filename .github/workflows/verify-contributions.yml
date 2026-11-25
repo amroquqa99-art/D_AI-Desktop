@@ -1,0 +1,71 @@
+name: Verify three contributions
+on:
+  push:
+    branches: [verify-prs]
+    paths: ['.github/workflows/verify-contributions.yml']
+permissions:
+  contents: read
+concurrency:
+  group: verify-contributions
+  cancel-in-progress: true
+jobs:
+  verify:
+    name: PR ${{ matrix.pr }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pr: 66461
+            ref: 34d543c9f473bbdb16b52001702aade0a43b9c77
+            package: core
+            test: test/tool-subagent.test.ts
+          - pr: 66463
+            ref: 263123775aacf350ec18fd5ef200f86f3f65897b
+            package: cli
+            test: test/updater-install.test.ts
+          - pr: 66464
+            ref: 1fd2befd928cb110b7c0f8f38e3998df4381e82e
+            package: util
+            test: src/session-turn.test.ts
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check revision
+        run: |
+          git rev-parse HEAD
+          test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+          git config user.email "verification@example.invalid"
+          git config user.name "Verification"
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version-file: package.json
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Regression tests
+        working-directory: packages/${{ matrix.package }}
+        env:
+          GITHUB_ACTIONS: "false"
+        run: bun run test "${{ matrix.test }}"
+      - name: Package typecheck
+        if: ${{ !cancelled() }}
+        working-directory: packages/${{ matrix.package }}
+        run: bun run typecheck:tsc
+      - name: Check dependent UI packages
+        if: ${{ !cancelled() && matrix.pr == 66464 }}
+        run: |
+          bun run --cwd packages/tui typecheck:tsc
+          bun run --cwd packages/session-ui typecheck:tsc
+          bun run --cwd packages/gui-plugins typecheck:tsc
+      - name: Check changed UI files
+        if: ${{ !cancelled() && matrix.pr == 66464 }}
+        run: bun run lint:changed c85b83eb08c3d2666b842848215325acb282d92b
