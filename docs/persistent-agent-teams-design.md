@@ -113,3 +113,12 @@ The test-only coordinator uses Session.create and SessionStore.list, not a secon
 
 ### Verified result
 CI run 45722970339, job 139585604458: 17 passed, 0 failed, 123 assertions (2.90 seconds of test execution); TypeScript core and test build passed. Linux with simulated execution/model fixtures, not a production integration or multi-process/restart test. The previous 15-test baseline remains green.
+
+
+## Multi-process SQLite binding and storage-reopen probe
+Source: https://github.com/amroquqa99-art/D_AI-Desktop/commit/26aa84135982042dff11d80a6b2d0054e03bc996
+CI: https://github.com/amroquqa99-art/D_AI-Desktop/actions/runs/45723393285
+
+The alternative test-only relation binds existing native child sessions to a retained roster. Its primary key (root_id, name), unique member_id, foreign keys and name check are enforced by SQLite. Insertion validates the current root and child relationship and project, rejects forks and archived sessions; listing rechecks those facts. The integration test uses a migrated native file database, closes the native service, and races four independent Bun writer processes for one name. It then reopens the native services against the same file, verifies the retained session identity and idle state, and verifies archive/unarchive visibility through separately opened SQLite connections.
+
+The test step passed. This demonstrates atomic membership binding, not an atomic create-and-bind operation: candidate child sessions were created beforehand. Production still needs a reviewed transaction or recoverable reservation protocol, authenticated mutation, integration with native event/projection and sync semantics, migration lifecycle, and cancellation behavior. Direct SQLite access is for this probe only, not a portable production implementation (the core supports injected SQLite clients). Rebuilding the native service and opening the file again is storage recovery, not recovery of an interrupted model/tool run or a complete server process. No upstream feature PR has been opened.
