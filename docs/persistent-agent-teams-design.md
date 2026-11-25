@@ -110,3 +110,6 @@ The test-only coordinator uses Session.create and SessionStore.list, not a secon
 - The prototype creates an idle session directly; agent validation, authorization and production model selection need to reuse the existing native admission path. It is not a new public endpoint or registered tool.
 - Archive in the probe only affects roster visibility. Production must define busy-member archive/cancel behavior and whether archived names remain reserved. No automatic background execution on listing or creation is introduced.
 - No upstream PR or production integration has been made. The test-only prototype is disposable if the maintainers prefer a different persistence strategy.
+
+### Verified result
+CI run 45722970339, job 139585604458: 17 passed, 0 failed, 123 assertions (2.90 seconds of test execution); TypeScript core and test build passed. Linux with simulated execution/model fixtures, not a production integration or multi-process/restart test. The previous 15-test baseline remains green.
