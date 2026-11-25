@@ -1,0 +1,32 @@
+name: Verify agent team foundations
+on:
+  push:
+    branches: [verify-agent-teams]
+    paths: ['.github/workflows/verify-agent-teams.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: 790e4281a989006ddbc9f82420d91eae69937ba2
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: |
+          git config user.email verification@example.invalid
+          git config user.name Verification
+      - working-directory: packages/core
+        env:
+          GITHUB_ACTIONS: "false"
+        run: bun run test test/tool-subagent.test.ts
+      - working-directory: packages/core
+        run: bun run typecheck:tsc
