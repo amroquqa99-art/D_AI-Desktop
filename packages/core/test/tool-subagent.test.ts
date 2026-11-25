@@ -419,6 +419,74 @@ describe("SubagentTool", () => {
     ),
   )
 
+  it.live("characterizes depth three, caller permissions, and direct ownership", () =>
+    tmpdirScoped().pipe(
+      Effect.flatMap((dir) =>
+        Effect.gen(function* () {
+          yield* Effect.promise(() =>
+            Bun.write(path.join(dir.path, "opencode.json"), JSON.stringify({ experimental: { subagent_depth: 3 } })),
+          )
+          const location = Location.Ref.make({ directory: AbsolutePath.make(dir.path) })
+          const sessions = yield* Session.Service
+          const root = yield* sessions.create({ location, model: parentModel })
+          yield* withSubagent(root.location)
+          const locations = yield* LocationServiceMap.Service
+          const registry = yield* Tool.Service.pipe(Effect.provide(locations.get(root.location)))
+          const reviewer = Agent.ID.make("reviewer")
+          const setDelegation = (effect: "allow" | "deny") =>
+            Agent.Service.use((agents) =>
+              agents.transform((editor) => {
+                editor.update(reviewer, (agent) => {
+                  agent.permissions.push({ action: "subagent", resource: "*", effect })
+                })
+              }),
+            ).pipe(Effect.provide(locations.get(root.location)))
+          const call = (parentID: Session.ID, caller: Agent.ID, id: string, sessionID?: Session.ID) =>
+            executeTool(registry, {
+              sessionID: parentID,
+              ...toolIdentity,
+              agent: caller,
+              call: {
+                type: "tool-call",
+                id,
+                name: SubagentTool.name,
+                input: { agent: "reviewer", description: id, prompt: id, sessionID },
+              },
+            })
+          const first = yield* call(root.id, toolIdentity.agent, "depth-one")
+          expect(first.status).toBe("completed")
+          const one = outputSessionID(first.metadata)
+          yield* setDelegation("deny")
+          expect((yield* call(one, reviewer, "denied-child")).status).toBe("error")
+          expect((yield* sessions.list({ parentID: one })).data).toHaveLength(0)
+          yield* setDelegation("allow")
+          const second = yield* call(one, reviewer, "depth-two")
+          expect(second.status).toBe("completed")
+          const two = outputSessionID(second.metadata)
+          const third = yield* call(two, reviewer, "depth-three")
+          expect(third.status).toBe("completed")
+          const three = outputSessionID(third.metadata)
+          expect((yield* sessions.get(one)).parentID).toBe(root.id)
+          expect((yield* sessions.get(two)).parentID).toBe(one)
+          expect((yield* sessions.get(three)).parentID).toBe(two)
+          expect(yield* call(three, reviewer, "depth-four")).toMatchObject({
+            status: "error",
+            error: { message: expect.stringContaining("Subagent depth limit reached (3)") },
+          })
+          expect((yield* sessions.list({ parentID: three })).data).toHaveLength(0)
+          expect(yield* call(root.id, toolIdentity.agent, "skip-generation", two)).toMatchObject({
+            status: "error",
+            error: { message: expect.stringContaining("is not a child of the current session") },
+          })
+          const resumed = yield* call(two, reviewer, "continue-depth-three", three)
+          expect(resumed.status).toBe("completed")
+          expect(outputSessionID(resumed.metadata)).toBe(three)
+          expect((yield* sessions.list({ parentID: two })).data).toHaveLength(1)
+        }),
+      ),
+    ),
+  )
+
   it.live("starts a child session and returns the running handle", () =>
     tmpdirScoped().pipe(
       Effect.flatMap((dir) =>
