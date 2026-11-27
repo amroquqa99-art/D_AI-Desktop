@@ -341,6 +341,48 @@ describe("SubagentTool", () => {
     ),
   )
 
+  for (const [limit, depth, visible] of [
+    [0, 0, false],
+    [1, 0, true],
+    [1, 1, false],
+    [2, 1, true],
+    [2, 2, false],
+  ] as const) {
+    productionIt.live(`offers the subagent tool at depth ${depth} with limit ${limit}: ${visible}`, () =>
+      tmpdirScoped().pipe(
+        Effect.flatMap((dir) =>
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              Bun.write(
+                path.join(dir.path, "opencode.json"),
+                JSON.stringify({ experimental: { subagent_depth: limit } }),
+              ),
+            )
+            const sessions = yield* Session.Service
+            const location = Location.Ref.make({ directory: AbsolutePath.make(dir.path) })
+            let session = yield* sessions.create({ location })
+            for (let i = 0; i < depth; i++) session = yield* sessions.create({ parentID: session.id })
+            yield* withSubagent(session.location)
+            const locations = yield* LocationServiceMap.Service
+            const hooks = yield* PluginHooks.Service.pipe(Effect.provide(locations.get(session.location)))
+            for (const hook of ["context", "compaction", "generate"] as const) {
+              const event = yield* hooks.trigger("session", hook, {
+                sessionID: session.id,
+                agent: toolIdentity.agent,
+                model: parentModel,
+                system: [],
+                messages: [],
+                options: {},
+                tools: { subagent: { description: SubagentTool.description, input: {} } },
+              })
+              expect(event.tools.subagent !== undefined).toBe(visible)
+            }
+          }),
+        ),
+      ),
+    )
+  }
+
   it.live("prevents subagents from launching subagents by default", () =>
     tmpdirScoped().pipe(
       Effect.flatMap((dir) =>
