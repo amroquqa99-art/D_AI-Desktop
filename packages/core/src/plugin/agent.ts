@@ -3,6 +3,9 @@ export * as AgentPlugin from "./agent.js"
 import { define } from "@opencode/plugin/effect/plugin"
 import { Effect } from "effect"
 import { Agent } from "../agent.js"
+import { Config } from "../config.js"
+import { ConfigEntryObserver } from "../config/plugin/entry-observer.js"
+import { SubagentDepth } from "../session/subagent-depth.js"
 
 const PROMPT_EXPLORE = `You are a file search specialist. You excel at thoroughly navigating and exploring codebases.
 
@@ -52,6 +55,8 @@ Rules:
 export const Plugin = define({
   id: "opencode.agent",
   effect: Effect.fn(function* (ctx) {
+    const config = yield* Config.Service
+    const loaded = yield* ConfigEntryObserver.observe(config, ctx.event, ctx.agent.reload(), SubagentDepth.configured)
     yield* ctx.agent.transform((editor) => {
       editor.update(Agent.defaultID, (item) => {
         item.name = Agent.Name.make("Build")
@@ -65,10 +70,9 @@ export const Plugin = define({
         item.description =
           "General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel."
         item.mode = "subagent"
-        item.permissions.push(
-          { action: "question", resource: "*", effect: "deny" },
-          { action: "subagent", resource: "*", effect: "deny" },
-        )
+        item.permissions.push({ action: "question", resource: "*", effect: "deny" })
+        if (SubagentDepth.configured(loaded.entries) <= 1)
+          item.permissions.push({ action: "subagent", resource: "*", effect: "deny" })
       })
 
       editor.update(Agent.ID.make("explore"), (item) => {

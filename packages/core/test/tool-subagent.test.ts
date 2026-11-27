@@ -341,21 +341,35 @@ describe("SubagentTool", () => {
     ),
   )
 
-  it.live("prevents subagents from launching subagents by default", () =>
+  it.live("allows a third generation by default and blocks a fourth", () =>
     tmpdirScoped().pipe(
       Effect.flatMap((dir) =>
         Effect.gen(function* () {
           const location = Location.Ref.make({ directory: AbsolutePath.make(dir.path) })
           const sessions = yield* Session.Service
           const root = yield* sessions.create({ location })
-          const parent = yield* sessions.create({ parentID: root.id, title: "parent" })
+          const child = yield* sessions.create({ parentID: root.id })
+          const parent = yield* sessions.create({ parentID: child.id, model: parentModel })
           yield* withSubagent(parent.location)
           const locations = yield* LocationServiceMap.Service
           const registry = yield* Tool.Service.pipe(Effect.provide(locations.get(parent.location)))
 
+          const third = yield* executeTool(registry, {
+            sessionID: parent.id,
+            ...toolIdentity,
+            call: {
+              type: "tool-call",
+              id: "call-third-generation",
+              name: SubagentTool.name,
+              input: { agent: "reviewer", description: "nested", prompt: "should run" },
+            },
+          })
+          expect(third.status).toBe("completed")
+          const leaf = outputSessionID(third.metadata)
+          expect((yield* sessions.get(leaf)).parentID).toBe(parent.id)
           expect(
             yield* executeTool(registry, {
-              sessionID: parent.id,
+              sessionID: leaf,
               ...toolIdentity,
               call: {
                 type: "tool-call",
@@ -368,10 +382,10 @@ describe("SubagentTool", () => {
             status: "error",
             error: {
               type: "tool.execution",
-              message: expect.stringContaining("Subagent depth limit reached (1)"),
+              message: expect.stringContaining("Subagent depth limit reached (3)"),
             },
           })
-          expect((yield* sessions.list({ parentID: parent.id })).data).toHaveLength(0)
+          expect((yield* sessions.list({ parentID: leaf })).data).toHaveLength(0)
         }),
       ),
     ),
