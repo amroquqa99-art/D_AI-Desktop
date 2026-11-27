@@ -39,6 +39,7 @@ async function renderComposer(
   open = () => true,
 ) {
   const events = createEventStream()
+  const messages: { sessionID: string; text: string; delivery: string }[] = []
   const interrupted: string[] = []
   const removed: string[] = []
   const viewed: string[] = []
@@ -47,7 +48,22 @@ async function renderComposer(
   let listReads = 0
   let dispatch!: ReturnType<typeof Keymap.use>["dispatch"]
   let route!: ReturnType<typeof useRoute>
-  const calls = createFetch((url, request) => {
+  const calls = createFetch(async (url, request) => {
+    const target = url.pathname.match(/^\/api\/session\/([^/]+)\/prompt$/)?.[1]
+    if (target && request.method === "POST") {
+      const body = await request.json()
+      messages.push({ sessionID: target, text: body.text, delivery: body.delivery })
+      return json({
+        data: {
+          id: body.id,
+          type: "user",
+          sessionID: target,
+          time: { created: 1 },
+          delivery: body.delivery,
+          payload: { text: body.text },
+        },
+      })
+    }
     if (url.pathname === "/api/session/active")
       return json({ data: { "child-a": { type: "running" }, "child-b": { type: "running" } } })
     const sessionID = url.pathname.match(/^\/api\/session\/([^/]+)$/)?.[1]
@@ -155,6 +171,7 @@ async function renderComposer(
   await app.renderOnce()
   return {
     app,
+    messages,
     interrupted,
     removed,
     viewed,
@@ -212,6 +229,49 @@ test("the inactive subagent filter only changes with its toggle", async () => {
     await composer.app.renderOnce()
     expect(composer.app.captureCharFrame()).toContain("First")
     expect(composer.app.captureCharFrame()).not.toContain("Third")
+  } finally {
+    composer.app.renderer.destroy()
+  }
+})
+
+test("retained idle teammates survive reopening the picker and can be removed", async () => {
+  const first = await renderComposer("subagents", {})
+  try {
+    first.app.mockInput.pressKey("a", { ctrl: true })
+    first.app.mockInput.pressKey("r", { ctrl: true })
+    await first.app.waitFor(() => first.app.captureCharFrame().includes("Team ·"))
+  } finally {
+    first.app.renderer.destroy()
+  }
+  const next = await renderComposer("subagents", {})
+  try {
+    expect(next.app.captureCharFrame()).toContain("Third")
+    expect(next.app.captureCharFrame()).toContain("Idle")
+    next.app.mockInput.pressKey("a", { ctrl: true })
+    next.app.mockInput.pressKey("r", { ctrl: true })
+    await next.app.waitFor(() => !next.app.captureCharFrame().includes("Team ·"))
+    next.app.mockInput.pressKey("a", { ctrl: true })
+    await next.app.renderOnce()
+    expect(next.app.captureCharFrame()).not.toContain("Third")
+    expect(next.messages).toEqual([])
+  } finally {
+    next.app.renderer.destroy()
+  }
+})
+
+test("messages steer the selected child without changing the parent route", async () => {
+  const composer = await renderComposer("subagents", {})
+  try {
+    composer.app.mockInput.pressArrow("down")
+    composer.app.mockInput.pressKey("s", { ctrl: true })
+    await composer.app.waitFor(() => composer.app.captureCharFrame().includes("Message Second"))
+    await composer.app.mockInput.typeText("Check the failing test first")
+    composer.app.mockInput.pressEnter()
+    await wait(() => composer.messages.length > 0)
+    expect(composer.messages).toEqual([
+      { sessionID: "child-b", text: "Check the failing test first", delivery: "steer" },
+    ])
+    expect(composer.route()).toMatchObject({ type: "session", sessionID: "parent" })
   } finally {
     composer.app.renderer.destroy()
   }
