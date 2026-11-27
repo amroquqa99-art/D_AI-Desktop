@@ -58,7 +58,7 @@ export class Info extends Schema.Class<Info>("ConfigExperimental.Info")({
         "Settings for the generate_image tool, which is offered while a connected provider has an image model.",
     }),
   subagent_depth: NonNegativeInt.pipe(optional).annotate({
-    description: "Maximum subagent nesting depth. Defaults to 1.",
+    description: "Maximum subagent nesting depth. The root session is depth 0. Defaults to 3.",
   }),
   location_idle_timeout: Schema.Union([Schema.DurationFromString, Schema.Literal(false)])
     .pipe(optional)

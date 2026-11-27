@@ -1,6 +1,7 @@
 import path from "path"
 import { describe, expect } from "bun:test"
 import { Effect, Exit, Fiber, Layer, Scope, Stream } from "effect"
+import { Config } from "@opencode/core/config"
 import { Agent } from "@opencode/core/agent"
 import { Bus } from "@opencode/core/bus"
 import { AppNodeBuilder } from "@opencode/core/effect/app-node-builder"
@@ -158,7 +159,7 @@ describe("Agent", () => {
         host({
           agent: agentHost(agent),
         }),
-      )
+      ).pipe(Effect.provide(Config.testLayer()))
 
       const agents = yield* agent.list()
       expect(agents.map((item) => String(item.id)).sort()).toEqual([
@@ -201,22 +202,23 @@ describe("Agent", () => {
     }),
   )
 
-  it.effect("denies the subagent tool for built-in subagents", () =>
+  it.effect("allows General to delegate by default and keeps Explore read-only", () =>
     Effect.gen(function* () {
       const agent = yield* Agent.Service
       yield* AgentPlugin.Plugin.effect(
         host({
           agent: agentHost(agent),
         }),
-      )
+      ).pipe(Effect.provide(Config.testLayer()))
 
       yield* Effect.forEach(["general", "explore"], (id) =>
         Effect.gen(function* () {
           const info = yield* agent.get(Agent.ID.make(id))
           if (!info) throw new Error(`expected built-in agent: ${id}`)
           expect(info.mode).toBe("subagent")
-          expect(info.permissions).toContainEqual({ action: "subagent", resource: "*", effect: "deny" })
-          expect(Permission.evaluate("subagent", "*", info.permissions).effect).toBe("deny")
+          expect(Permission.evaluate("subagent", "*", info.permissions).effect).toBe(
+            id === "general" ? "allow" : "deny",
+          )
         }),
       )
     }),

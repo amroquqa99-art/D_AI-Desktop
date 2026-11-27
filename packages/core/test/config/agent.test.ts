@@ -186,11 +186,41 @@ permissions: [{ action: edit, resource: "*", effect: deny }]`,
     }),
   )
 
+  for (const depth of [0, 1, 2, 3]) {
+    it.effect(`respects General delegation permissions at depth ${depth}`, () =>
+      Effect.gen(function* () {
+        const agents = yield* Agent.Service
+        const ctx = host({ agent: agentHost(agents) })
+        const entries = [
+          new Document({
+            type: "document",
+            info: decode({
+              experimental: { subagent_depth: depth },
+              agents: { general: { permissions: [{ action: "subagent", resource: "private", effect: "deny" }] } },
+            }),
+          }),
+        ]
+        yield* Effect.gen(function* () {
+          yield* AgentPlugin.Plugin.effect(ctx)
+          yield* ConfigAgentPlugin.Plugin.effect(ctx)
+        }).pipe(Effect.provide(Config.testLayer(entries)))
+        const general = yield* agents.get(Agent.ID.make("general"))
+        const explore = yield* agents.get(Agent.ID.make("explore"))
+        if (!general || !explore) throw new Error("expected built-in subagents")
+        expect(Permission.evaluate("subagent", "general", general.permissions).effect).toBe(
+          depth > 1 ? "allow" : "deny",
+        )
+        expect(Permission.evaluate("subagent", "private", general.permissions).effect).toBe("deny")
+        expect(Permission.evaluate("subagent", "general", explore.permissions).effect).toBe("deny")
+      }),
+    )
+  }
+
   it.effect("applies remote permission defaults before explicit global and build rules", () =>
     Effect.gen(function* () {
       const agents = yield* Agent.Service
       const global = yield* Global.Service
-      yield* AgentPlugin.Plugin.effect(host({ agent: agentHost(agents) }))
+      yield* AgentPlugin.Plugin.effect(host({ agent: agentHost(agents) })).pipe(Effect.provide(Config.testLayer()))
 
       const entries = [
         new Document({

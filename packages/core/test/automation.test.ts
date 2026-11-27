@@ -1643,7 +1643,9 @@ describe("Automation", () => {
         const automations = yield* setup()
         const sessions = yield* Session.Service
         agentRules = [...agentRules, { action: "subagent", resource: "helper", effect: "ask" }]
-        const nested = yield* sessions.create({ parentID: sessionID })
+        const child = yield* sessions.create({ parentID: sessionID })
+        const grandchild = yield* sessions.create({ parentID: child.id })
+        const nested = yield* sessions.create({ parentID: grandchild.id })
         const targets: Schema.Json[] = [
           { session: otherID },
           { subagent: "internal" },
@@ -1690,7 +1692,7 @@ describe("Automation", () => {
             runCount: 1,
             state: "before",
           })
-        expect((yield* automations.get(deep.id)).lastOutput).toBe("Subagent depth limit reached (1)")
+        expect((yield* automations.get(deep.id)).lastOutput).toBe("Subagent depth limit reached (3)")
         expect((yield* automations.get(blocked.id)).lastOutput).toBe(
           "Cannot start subagent helper: Permission denied: subagent",
         )
@@ -1704,7 +1706,7 @@ describe("Automation", () => {
         ])
         expect(yield* pending).toEqual([])
         expect(wakes).toEqual([])
-        expect((yield* sessions.list({ parentID: sessionID })).data.map((session) => session.id)).toEqual([nested.id])
+        expect((yield* sessions.list({ parentID: sessionID })).data.map((session) => session.id)).toEqual([child.id])
         expect((yield* sessions.list({ parentID: nested.id })).data).toEqual([])
         expect((yield* sessions.list({ parentID: denied.id })).data).toEqual([])
       }),
