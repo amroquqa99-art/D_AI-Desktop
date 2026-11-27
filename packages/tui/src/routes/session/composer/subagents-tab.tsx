@@ -1,4 +1,4 @@
-import { createMemo, For, Show, createEffect, onMount, onCleanup } from "solid-js"
+import { createMemo, createSignal, For, Show, createEffect, onMount, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { TextAttributes, ScrollBoxRenderable } from "@opentui/core"
 import { useRenderer } from "@opentui/solid"
@@ -14,6 +14,10 @@ import { useComposerTab } from "./context"
 import { withTimestampedFallback } from "@opencode/util/session-title-fallback"
 import { ownedJobs, sessionFamily } from "../../../util/session"
 
+import { useDialog } from "../../../ui/dialog"
+import { DialogPrompt } from "../../../ui/dialog-prompt"
+import { useToast } from "../../../ui/toast"
+
 interface SubagentEntry {
   sessionID: string
   agent: string
@@ -21,6 +25,7 @@ interface SubagentEntry {
   status: string
   // Running jobs in its tree. A subagent stays active while any of them runs.
   jobs: string[]
+  retained: boolean
   current: boolean
   prefix: string
 }
@@ -35,10 +40,15 @@ export function SubagentsTab(props: { sessionID: string }) {
   const composer = useComposerTab()
   const shortcuts = Keymap.useShortcuts()
 
+  const dialog = useDialog()
+  const toast = useToast()
+  const storage = useStorage()
+  const [team, updateTeam] = storage.store("retained-subagents", { initial: { ids: [] as string[] } })
+
   const session = createMemo(() => data.session.get(props.sessionID))
   const [store, setStore] = createStore({ selected: 0 })
   // The session route remounts on navigation, so the filter lives in TUI memory and only ctrl+a changes it.
-  const [filter, updateFilter] = useStorage().memory("subagents-filter", { initial: { active: true } })
+  const [filter, updateFilter] = storage.memory("subagents-filter", { initial: { active: true } })
 
   const entries = createMemo<SubagentEntry[]>(() => {
     if (!composer.active("subagents")) return []
@@ -60,13 +70,18 @@ export function SubagentsTab(props: { sessionID: string }) {
           title: agentMatch ? title.replace(agentMatch[0], "").trim() || title : title,
           status: data.session.status(session.id),
           jobs: ownedJobs(jobs, session.id, (id) => data.session.get(id)?.parentID).map((job) => job.id),
+          retained: team.ids.includes(session.id),
           current: session.id === route.sessionID,
           prefix,
         }
       },
     )
 
-    return result.filter((entry) => filter.active === (entry.status === "running" || entry.jobs.length > 0))
+    return result.filter((entry) =>
+      filter.active
+        ? entry.retained || entry.status === "running" || entry.jobs.length > 0
+        : entry.status !== "running" && entry.jobs.length === 0,
+    )
   })
 
   let selectedSessionID = ""
@@ -127,6 +142,15 @@ export function SubagentsTab(props: { sessionID: string }) {
       hints: () => {
         const entry = selectedEntry()
         return [
+          ...(entry
+            ? [
+                {
+                  label: entry.retained ? "remove teammate" : "keep teammate",
+                  shortcut: shortcuts.get("composer.subagent.retain") ?? "",
+                },
+                { label: "message", shortcut: shortcuts.get("composer.subagent.message") ?? "" },
+              ]
+            : []),
           ...(entry && (entry.status === "running" || entry.jobs.length > 0)
             ? [{ label: "interrupt", shortcut: shortcuts.get("composer.subagent.interrupt") ?? "" }]
             : []),
@@ -188,6 +212,51 @@ export function SubagentsTab(props: { sessionID: string }) {
         },
       },
       {
+        id: "composer.subagent.retain",
+        title: "Add or remove a teammate",
+        group: "Composer",
+        run() {
+          const entry = selectedEntry()
+          if (!entry) return
+          const retain = !entry.retained
+          void updateTeam((draft) => {
+            draft.ids = draft.ids.filter((id) => id !== entry.sessionID)
+            if (retain) draft.ids.push(entry.sessionID)
+          }).catch((error) => toast.error(error))
+        },
+      },
+      {
+        id: "composer.subagent.message",
+        title: "Message selected subagent",
+        group: "Composer",
+        run() {
+          const entry = selectedEntry()
+          if (!entry) return
+          dialog.replace(() => {
+            const [busy, setBusy] = createSignal(false)
+            return (
+              <DialogPrompt
+                title={`Message ${entry.title}`}
+                placeholder="Instructions for this subagent"
+                busy={busy()}
+                onCancel={() => dialog.clear()}
+                onConfirm={(value) => {
+                  if (!value.trim() || busy()) return
+                  setBusy(true)
+                  void data.session
+                    .prompt({ sessionID: entry.sessionID, text: value, delivery: "steer" })
+                    .then(() => dialog.clear())
+                    .catch((error) => {
+                      setBusy(false)
+                      toast.error(error)
+                    })
+                }}
+              />
+            )
+          })
+        },
+      },
+      {
         id: "composer.subagent.interrupt",
         title: "Interrupt subagent",
         group: "Composer",
@@ -213,7 +282,7 @@ export function SubagentsTab(props: { sessionID: string }) {
               const active = createMemo(() => index() === store.selected)
               const status = createMemo(() => {
                 if (entry.status === "running") return "Running"
-                return ""
+                return entry.retained ? "Idle" : ""
               })
               return (
                 <box
@@ -246,6 +315,7 @@ export function SubagentsTab(props: { sessionID: string }) {
                       wrapMode="none"
                     >
                       {entry.prefix}
+                      {entry.retained ? "Team · " : ""}
                       {entry.agent}: {entry.title}
                     </text>
                   </box>

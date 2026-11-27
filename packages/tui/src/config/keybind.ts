@@ -252,6 +252,8 @@ export const Definitions = {
   "composer.subagent.up": keybind("up", "Previous subagent"),
   "composer.subagent.down": keybind("down", "Next subagent"),
   "composer.subagent.select": keybind("return", "Navigate to subagent"),
+  "composer.subagent.retain": keybind("ctrl+r", "Add or remove a teammate"),
+  "composer.subagent.message": keybind("ctrl+s", "Message selected subagent"),
   "composer.subagent.interrupt": keybind("ctrl+d", "Interrupt subagent"),
   "composer.shell.up": keybind("up", "Previous shell"),
   "composer.shell.down": keybind("down", "Next shell"),
